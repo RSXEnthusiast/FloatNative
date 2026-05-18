@@ -82,11 +82,44 @@ extension BlogPostModelV3Channel {
 }
 
 // MARK: - Multi-Creator Feed Response
-// Using OpenAPI-generated models
+//
+// Wraps `ContentCreatorListV3Response` with element-tolerant decoding for the
+// `blogPosts` array. A single malformed post (e.g. an unexpected schema
+// variation on a new content type) gets logged and skipped instead of failing
+// the whole feed. The shape is otherwise identical to the generated type, so
+// call sites don't change.
 
-typealias CreatorListResponse = ContentCreatorListV3Response
 typealias FetchCursor = ContentCreatorListLastItems
 typealias ContentMetadata = PostMetadataModel
+
+struct CreatorListResponse: Codable {
+    let blogPosts: [BlogPost]
+    let lastElements: [FetchCursor]
+
+    enum CodingKeys: String, CodingKey {
+        case blogPosts, lastElements
+    }
+
+    init(blogPosts: [BlogPost], lastElements: [FetchCursor]) {
+        self.blogPosts = blogPosts
+        self.lastElements = lastElements
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        // Lossy decode: skip individual posts that fail rather than failing
+        // the whole feed. See LossyArray.
+        let lossy = try container.decode(LossyArray<BlogPost>.self, forKey: .blogPosts)
+        self.blogPosts = lossy.wrappedValue
+        self.lastElements = try container.decode([FetchCursor].self, forKey: .lastElements)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(blogPosts, forKey: .blogPosts)
+        try container.encode(lastElements, forKey: .lastElements)
+    }
+}
 
 // MARK: - Video Content
 // Using OpenAPI-generated models

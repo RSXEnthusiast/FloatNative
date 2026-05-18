@@ -47,7 +47,10 @@ fun TvVideoCard(
     TvVideoCardContent(
         title = post.title,
         thumbnail = post.thumbnail,
-        channelTitle = post.channel.title,
+        // post.channel is the sealed BlogPostModelV3Channel oneOf — title/icon
+        // come back null when Floatplane returned just a string ID. Fall back
+        // to the creator's name in that case.
+        channelTitle = post.channel.title ?: post.creator.title,
         channelIcon = post.channel.icon,
         creatorIcon = post.creator.icon,
         duration = post.metadata.videoDuration.toLong(),

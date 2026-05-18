@@ -158,13 +158,16 @@ class SearchViewModel : TvSidebarViewModel() {
             com.coulterpeterson.floatnative.openapi.models.ImageModel(512, 512, java.net.URI.create("/channel/icon/placeholder"), null)
         }
 
-        val channel = com.coulterpeterson.floatnative.openapi.models.BlogPostModelV3Channel(
-             id = result.channelTitle.lowercase().replace(" ", ""),
-             creator = creatorId,
-             title = result.channelTitle,
-             urlname = result.channelTitle.lowercase().replace(" ", ""),
-             about = "", order = null, cover = null, card = null, icon = channelIcon, socialLinks = null
+        // Build a synthetic ChannelModel for search results and wrap it in the
+        // sealed BlogPostModelV3Channel.
+        val channelModel = com.coulterpeterson.floatnative.openapi.models.ChannelModel(
+            id = result.channelTitle.lowercase().replace(" ", ""),
+            creator = creatorId,
+            title = result.channelTitle,
+            urlname = result.channelTitle.lowercase().replace(" ", ""),
+            about = "", cover = null, card = null, icon = channelIcon, order = null, socialLinks = null
         )
+        val channel = com.coulterpeterson.floatnative.openapi.models.BlogPostModelV3Channel.AsObject(channelModel)
         
         // Metadata
         val metadata = com.coulterpeterson.floatnative.openapi.models.PostMetadataModel(

@@ -28,7 +28,7 @@ enum CompanionAPIError: LocalizedError {
         case .httpError(let statusCode, let message):
             return "HTTP Error \(statusCode): \(message ?? "Unknown error")"
         case .decodingError(let error):
-            return "Failed to decode response: \(error.localizedDescription)"
+            return "Failed to decode response: \(DecodingErrorFormatter.summary(error))"
         case .notAuthenticated:
             return "Not authenticated. Please register first."
         case .networkError(let error):

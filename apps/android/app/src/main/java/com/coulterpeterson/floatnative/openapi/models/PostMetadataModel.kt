@@ -53,8 +53,11 @@ data class PostMetadataModel (
     @Json(name = "hasPicture")
     val hasPicture: kotlin.Boolean,
 
+    // isFeatured is sometimes absent on real-world responses (livestream VODs
+    // and certain post types). Marked optional via packages/openapi/spec-overlay.json
+    // so future regenerations stay loose.
     @Json(name = "isFeatured")
-    val isFeatured: kotlin.Boolean,
+    val isFeatured: kotlin.Boolean? = null,
 
     @Json(name = "videoCount")
     val videoCount: kotlin.Int? = null,

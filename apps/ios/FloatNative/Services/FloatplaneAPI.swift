@@ -29,7 +29,7 @@ enum FloatplaneAPIError: LocalizedError {
         case .httpError(let statusCode, let message):
             return "HTTP Error \(statusCode): \(message ?? "Unknown error")"
         case .decodingError(let error):
-            return "Failed to decode response: \(error.localizedDescription)"
+            return "Failed to decode response: \(DecodingErrorFormatter.summary(error))"
         case .notAuthenticated:
             return "Not authenticated. Please log in."
         case .networkError(let error):
@@ -519,9 +519,10 @@ class FloatplaneAPI: ObservableObject {
             // Try to decode as a generic error response first
             if let errorResponse = try? JSONDecoder().decode(FloatplaneErrorResponse.self, from: data) {
                 let message = errorResponse.message ?? errorResponse.errors?.first?.message
-                #if DEBUG
-                print("❌ API returned error structure for \(endpoint): \(message ?? "Unknown")")
-                #endif
+                DebugLogManager.shared.append(.api(
+                    "API error structure on \(endpoint): \(message ?? "Unknown")",
+                    detail: String(data: data, encoding: .utf8)
+                ))
                 throw FloatplaneAPIError.malformedData(message: message)
             }
 
@@ -529,18 +530,27 @@ class FloatplaneAPI: ObservableObject {
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                (json.keys.contains("rateLimit") || json.keys.contains("error") || json.keys.contains("status")) {
                 let message = (json["message"] as? String) ?? (json["error"] as? String) ?? "Unexpected response structure"
-                #if DEBUG
-                print("❌ API returned unexpected structure for \(endpoint): \(json)")
-                #endif
+                DebugLogManager.shared.append(.api(
+                    "Unexpected JSON structure on \(endpoint): \(message)",
+                    detail: String(data: data, encoding: .utf8)
+                ))
                 throw FloatplaneAPIError.malformedData(message: message)
             }
 
-            // Log decoding errors for debugging
+            // Log decoding errors with full detail to the in-app debug log so
+            // users can copy/paste them into a bug report. Body is truncated
+            // to keep the buffer reasonable.
+            let summary = DecodingErrorFormatter.summary(error)
+            let body = String(data: data, encoding: .utf8) ?? "<non-utf8 \(data.count) bytes>"
+            let snippet = body.count > 4096 ? String(body.prefix(4096)) + "\n…(truncated)" : body
+            DebugLogManager.shared.append(.decode(
+                message: "decode failed on \(endpoint): \(summary)",
+                verbose: "\(DecodingErrorFormatter.verbose(error))\n\nResponse body:\n\(snippet)"
+            ))
             #if DEBUG
-            print("❌ Decoding Error for \(endpoint): \(error)")
-            if let dataString = String(data: data, encoding: .utf8) {
-                print("Response data: \(dataString)")
-            }
+            print("❌ Decode error on \(endpoint): \(summary)")
+            print(DecodingErrorFormatter.verbose(error))
+            print("Response data: \(snippet)")
             #endif
             throw FloatplaneAPIError.decodingError(error)
         }
@@ -584,12 +594,20 @@ class FloatplaneAPI: ObservableObject {
         request.httpBody = bodyString.data(using: .utf8)
 
         #if DEBUG
-        print("Body: \(bodyString)")
-        if let dpop = request.value(forHTTPHeaderField: "DPoP") {
-            print("DPoP Headers: \(dpop)")
-        } else {
-            print("DPoP Headers: MISSING")
-        }
+        // Redact secret-bearing fields so credentials never land in console logs.
+        let sensitiveKeys: Set<String> = [
+            "refresh_token", "access_token", "code", "device_code",
+            "code_verifier", "client_secret", "password", "username",
+        ]
+        let redactedBody = body.map { key, value -> String in
+            if sensitiveKeys.contains(key) {
+                let prefix = String(value.prefix(4))
+                return "\(key)=\(prefix)…(redacted, len=\(value.count))"
+            }
+            return "\(key)=\(value)"
+        }.joined(separator: "&")
+        print("Body: \(redactedBody)")
+        print("DPoP Headers: \(request.value(forHTTPHeaderField: "DPoP") != nil ? "present" : "MISSING")")
         print("--------------------------------")
         #endif
 
@@ -615,9 +633,12 @@ class FloatplaneAPI: ObservableObject {
 
 
         #if DEBUG
+        // Don't dump full headers — `Set-Cookie: sails.sid=...` and DPoP-Nonce
+        // both show up here and don't belong in console logs.
+        let safeHeaderKeys = httpResponse.allHeaderFields.keys.compactMap { $0 as? String }
         print("--------- AUTH RESPONSE ---------")
         print("Status: \(httpResponse.statusCode)")
-        print("Headers: \(httpResponse.allHeaderFields)")
+        print("Header keys: \(safeHeaderKeys.sorted())")
         #endif
 
         guard (200...299).contains(httpResponse.statusCode) else {
@@ -883,14 +904,6 @@ class FloatplaneAPI: ObservableObject {
     func getUserActivity(userId: String) async throws -> UserActivity {
         try await request(
             endpoint: "/api/v3/user/activity?id=\(userId)",
-            requiresAuth: true
-        )
-    }
-
-    /// Get user external links
-    func getUserLinks(userId: String) async throws -> UserLinks {
-        try await request(
-            endpoint: "/api/v3/user/links?id=\(userId)",
             requiresAuth: true
         )
     }

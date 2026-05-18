@@ -1,0 +1,63 @@
+{
+  "request": { "method": "GET", "path": "/api/v3/content/creator/list" },
+  "response": {
+    "status": 200,
+    "body": {
+      "blogPosts": [
+        {
+          "id": "FixturePost002",
+          "guid": "FixturePost002",
+          "title": "Fixture: post with channel as bare string ID",
+          "text": "<p>Exercises the oneOf [ChannelModel | string] variant.</p>",
+          "type": "blogPost",
+          "channel": "59f94c0bdd241b70349eb72c",
+          "tags": [],
+          "attachmentOrder": [],
+          "metadata": {
+            "hasVideo": false,
+            "videoDuration": 0,
+            "hasAudio": false,
+            "audioDuration": 0,
+            "hasPicture": false
+          },
+          "releaseDate": "2024-01-15T12:00:00.000Z",
+          "likes": 0,
+          "dislikes": 0,
+          "score": 0,
+          "comments": 0,
+          "creator": {
+            "id": "59f94c0bdd241b70349eb72b",
+            "owner": { "id": "59f94c0bdd241b70349eb723", "username": "fixture-user" },
+            "title": "Fixture Creator",
+            "urlname": "fixture",
+            "description": "Fixture creator used in unit tests.",
+            "about": "About fixture",
+            "category": { "id": "5c9d1f0b1ccc6f8e8a000001", "title": "Technology" },
+            "cover": null,
+            "icon": {
+              "width": 600,
+              "height": 600,
+              "path": "https://example.invalid/icon.jpg",
+              "childImages": []
+            },
+            "liveStream": null,
+            "subscriptionPlans": [],
+            "discoverable": true,
+            "subscriberCountDisplay": "total",
+            "incomeDisplay": false
+          },
+          "wasReleasedSilently": false,
+          "thumbnail": null,
+          "isAccessible": true
+        }
+      ],
+      "lastElements": [
+        {
+          "creatorId": "59f94c0bdd241b70349eb72b",
+          "blogPostId": "FixturePost002",
+          "moreFetchable": false
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "_comment": "JSON Merge Patch (RFC 7396) applied to floatplane-openapi-specification.json before code generation. Use this to (a) loosen 'required' fields where the community spec is too strict for real responses, (b) add fields the community spec is missing, and (c) document spec gaps in one place that both iOS and Android pick up. The merger lives at packages/openapi/scripts/apply-overlay.py and is called from generate-swift.sh and generate-kotlin.sh. floatcli/spec.py also applies it at runtime so its validation matches the iOS/Android codegen.",
+
+  "components": {
+    "schemas": {
+      "PostMetadataModel": {
+        "_comment": "Real responses occasionally omit isFeatured on certain post types (livestream VODs in particular). Treating it as optional keeps the home feed decoder from blowing up on a single non-conforming post. See HomeFeedViewModel + LossyArray for the wider safety net.",
+        "required": [
+          "hasVideo",
+          "videoDuration",
+          "hasAudio",
+          "audioDuration",
+          "hasPicture"
+        ]
+      },
+      "SubscriptionPlanModel": {
+        "_comment": "Real /api/v3/content/creator/list responses omit `interval` on every subscriptionPlan we've observed (e.g. LTT). The upstream spec marks it required, which would crash decode for any post whose creator has plans without it (= every post). Loosened here; see fixture get_api_v3_content_creator_list_ids_0_*.json captured 2026-05-08.",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "price",
+          "currency",
+          "logo",
+          "featured",
+          "discordServers",
+          "discordRoles"
+        ]
+      },
+      "UserModel": {
+        "_comment": "Real responses include a `badges: [string]` array on the user object that the upstream spec doesn't model. The spec also marks UserModel additionalProperties: false, which causes strict validators to reject the badges field. Observed in /api/v3/comment, /api/v3/comment/replies, and anywhere a CommentModel.user is rendered. Removing additionalProperties allows the field through; adding it explicitly lets future codegen emit a typed accessor.",
+        "additionalProperties": null,
+        "properties": {
+          "badges": {
+            "type": "array",
+            "description": "Badge IDs awarded to the user. Not in the upstream spec; observed in production on comment authors.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreatorModelV3": {
+        "_comment": "The inline owner schema on CreatorModelV3 mirrors the badges-on-user pattern: `additionalProperties: false` plus no `badges` field. Real responses on /api/v3/creator/info, /creator/named, and /creator/list all carry badges on owner.",
+        "properties": {
+          "owner": {
+            "additionalProperties": null,
+            "properties": {
+              "badges": {
+                "type": "array",
+                "description": "Badge IDs awarded to the owning user. Not in the upstream spec.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ImageModel": {
+        "_comment": "Real responses omit `childImages` entirely on placeholder/data-URI icons (e.g. small base64 PNGs returned for users without uploaded avatars, observed in /api/v3/content/history). The upstream spec marks it required + nullable, but the field can be absent. Both iOS Codable (decodeIfPresent for optional vars) and Moshi-Kotlin (nullable fields default to null) already handle the missing case — only the spec is too strict.",
+        "required": ["width", "height", "path"]
+      },
+      "ContentPostV3Response": {
+        "_comment": "selfUserInteraction is returned by /api/v3/content/post but absent from the upstream spec. The field is null when the current user has not interacted with the post; an array of interaction strings otherwise. Documented so iOS/Android stop maintaining this field as a wrapper struct (BlogPostDetailedWithInteraction).",
+        "properties": {
+          "selfUserInteraction": {
+            "type": "array",
+            "nullable": true,
+            "description": "Which interactions the current user has performed on this post (e.g. 'like', 'dislike'). Null when no interaction. Not in the upstream spec; observed in production.",
+            "items": {
+              "type": "string",
+              "enum": ["like", "dislike"]
+            }
+          }
+        }
+      },
+      "WatchHistoryEntry": {
+        "type": "object",
+        "description": "One entry in /api/v3/content/history. Records that a user watched a piece of content along with their last-known progress. Not in the upstream spec.",
+        "properties": {
+          "userId": { "type": "string" },
+          "contentId": { "type": "string" },
+          "contentType": { "type": "string" },
+          "progress": { "type": "integer", "description": "Last-known playback progress in seconds." },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "blogPost": { "$ref": "#/components/schemas/WatchHistoryBlogPost" }
+        },
+        "required": ["userId", "contentId", "contentType", "progress", "updatedAt", "blogPost"]
+      },
+      "WatchHistoryBlogPost": {
+        "type": "object",
+        "description": "Variant of BlogPostModelV3 returned inside watch-history entries. Differs from the home-feed shape in that videoAttachments / audioAttachments / pictureAttachments / galleryAttachments are arrays of string IDs rather than full attachment objects.",
+        "properties": {
+          "id": { "type": "string" },
+          "guid": { "type": "string" },
+          "title": { "type": "string" },
+          "text": { "type": "string" },
+          "type": { "type": "string" },
+          "channel": { "$ref": "#/components/schemas/ChannelModel" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "attachmentOrder": { "type": "array", "items": { "type": "string" } },
+          "metadata": { "$ref": "#/components/schemas/PostMetadataModel" },
+          "releaseDate": { "type": "string", "format": "date-time" },
+          "likes": { "type": "integer" },
+          "dislikes": { "type": "integer" },
+          "score": { "type": "integer" },
+          "comments": { "type": "integer" },
+          "creator": { "$ref": "#/components/schemas/CreatorModelV2" },
+          "wasReleasedSilently": { "type": "boolean" },
+          "thumbnail": { "allOf": [{ "$ref": "#/components/schemas/ImageModel" }], "nullable": true },
+          "isAccessible": { "type": "boolean" },
+          "videoAttachments": { "type": "array", "items": { "type": "string" } },
+          "audioAttachments": { "type": "array", "items": { "type": "string" } },
+          "pictureAttachments": { "type": "array", "items": { "type": "string" } },
+          "galleryAttachments": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": [
+          "id", "guid", "title", "text", "type", "channel", "tags", "attachmentOrder",
+          "metadata", "releaseDate", "likes", "dislikes", "score", "comments",
+          "creator", "wasReleasedSilently", "isAccessible"
+        ]
+      }
+    }
+  },
+
+  "paths": {
+    "/api/v3/content/history": {
+      "_comment": "Endpoint exists in production but is missing from the upstream spec. Returns the most recently-watched posts (paged via offset). The blogPost embedded in each entry has a different shape from BlogPostModelV3: video/audio/picture/galleryAttachments are arrays of string IDs rather than full objects. iOS hand-models this as WatchHistoryBlogPost.",
+      "get": {
+        "operationId": "getContentHistory",
+        "summary": "Get watch history",
+        "description": "Returns the authenticated user's watch history, paginated by offset.",
+        "tags": ["ContentV3"],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": { "type": "integer", "minimum": 0 },
+            "required": false,
+            "description": "How many entries to skip (for pagination)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK - History entries returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/WatchHistoryEntry" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -22,9 +22,12 @@ public struct PostMetadataModel: Codable, JSONEncodable, Hashable {
     public var pictureCount: Int?
     public var hasGallery: Bool?
     public var galleryCount: Int?
-    public var isFeatured: Bool
+    // isFeatured is sometimes absent on real-world responses (livestream VODs
+    // and certain post types). Marked optional via packages/openapi/spec-overlay.json
+    // so future regenerations stay loose — see that file for the rationale.
+    public var isFeatured: Bool?
 
-    public init(hasVideo: Bool, videoCount: Int? = nil, videoDuration: Double, hasAudio: Bool, audioCount: Int? = nil, audioDuration: Double, hasPicture: Bool, pictureCount: Int? = nil, hasGallery: Bool? = nil, galleryCount: Int? = nil, isFeatured: Bool) {
+    public init(hasVideo: Bool, videoCount: Int? = nil, videoDuration: Double, hasAudio: Bool, audioCount: Int? = nil, audioDuration: Double, hasPicture: Bool, pictureCount: Int? = nil, hasGallery: Bool? = nil, galleryCount: Int? = nil, isFeatured: Bool? = nil) {
         self.hasVideo = hasVideo
         self.videoCount = videoCount
         self.videoDuration = videoDuration
@@ -66,7 +69,7 @@ public struct PostMetadataModel: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(pictureCount, forKey: .pictureCount)
         try container.encodeIfPresent(hasGallery, forKey: .hasGallery)
         try container.encodeIfPresent(galleryCount, forKey: .galleryCount)
-        try container.encode(isFeatured, forKey: .isFeatured)
+        try container.encodeIfPresent(isFeatured, forKey: .isFeatured)
     }
 }
 

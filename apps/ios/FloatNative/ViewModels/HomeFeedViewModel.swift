@@ -29,7 +29,10 @@ class HomeFeedViewModel: ObservableObject {
 
         isLoading = true
         errorMessage = nil
-        seenPostIds.removeAll() // Clear seen posts on initial load
+        // Note: don't clear seenPostIds here. We rebuild the set from the
+        // freshly-fetched posts below — clearing it before the request means
+        // a failed fetch leaves dedup empty while old posts remain visible,
+        // and the next loadMore() floods the list with duplicates.
 
         do {
             // Get user subscriptions if not already loaded
@@ -183,12 +186,12 @@ class HomeFeedViewModel: ObservableObject {
     }
 
     func refresh() async {
-        // Don't clear posts - keep old content visible during refresh
-        // Only reset state that affects fetching
+        // Don't clear posts - keep old content visible during refresh.
+        // Only reset cursor state. seenPostIds is rebuilt from the new posts
+        // inside loadFeed (or left intact on failure so loadMore() still dedups).
         creatorOffsets = [:]
         lastFetchAfter = 0
         lastCursors = []
-        seenPostIds.removeAll()
 
         await loadFeed(filter: filter)
     }

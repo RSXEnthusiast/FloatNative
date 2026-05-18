@@ -29,6 +29,7 @@ import com.coulterpeterson.floatnative.viewmodels.SettingsViewModel
 fun SettingsScreen(
     onBack: () -> Unit,
     onLogoutSuccess: () -> Unit,
+    onOpenDebugLog: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -191,13 +192,33 @@ fun SettingsScreen(
             }
 
             // --- Debug Section ---
-            if (com.coulterpeterson.floatnative.BuildConfig.DEBUG) {
-                item {
+            item {
+                val debugLogEntries by com.coulterpeterson.floatnative.utils.DebugLogManager.entries.collectAsState()
+                Text("Debug", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Debug log accessible in all builds — handy for users to
+                // grab the last decode/auth error and paste it into a bug report.
+                ListItem(
+                    headlineContent = { Text("Debug Log") },
+                    supportingContent = {
+                        Text(
+                            if (debugLogEntries.isEmpty())
+                                "No diagnostic events yet."
+                            else
+                                "${debugLogEntries.size} recent event${if (debugLogEntries.size == 1) "" else "s"}"
+                        )
+                    },
+                    trailingContent = {
+                        if (debugLogEntries.isNotEmpty()) {
+                            Badge { Text(debugLogEntries.size.toString()) }
+                        }
+                    },
+                    modifier = Modifier.clickable { onOpenDebugLog() }
+                )
+
+                if (com.coulterpeterson.floatnative.BuildConfig.DEBUG) {
                     val fakeLiveDtreamEnabled by viewModel.fakeLiveStreamEnabled.collectAsState()
-                    
-                    Text("Debug", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
                     ListItem(
                         headlineContent = { Text("Enable Fake Live Stream") },
                         supportingContent = { Text("Injects a fake live stream into the main feed for UI testing.") },

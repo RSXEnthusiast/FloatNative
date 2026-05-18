@@ -244,13 +244,25 @@ class AuthInterceptor(
 
                                 } catch (retryEx: Exception) {
                                     android.util.Log.e("AuthInterceptor", "Retry refresh failed", retryEx)
+                                    com.coulterpeterson.floatnative.utils.DebugLogManager.auth(
+                                        "Token refresh retry failed; signing out",
+                                        "${retryEx.javaClass.simpleName}: ${retryEx.message}"
+                                    )
                                     tokenManager.clearAll()
                                 }
                             } else {
+                                com.coulterpeterson.floatnative.utils.DebugLogManager.auth(
+                                    "Token refresh failed (non-DPoP error); signing out",
+                                    "${e.javaClass.simpleName}: ${e.message}"
+                                )
                                 tokenManager.clearAll()
                             }
                         } else {
                             // Refresh failed, clear tokens to force re-login
+                            com.coulterpeterson.floatnative.utils.DebugLogManager.auth(
+                                "Token refresh failed; signing out",
+                                "${e.javaClass.simpleName}: ${e.message}"
+                            )
                             tokenManager.clearAll()
                         }
                     }

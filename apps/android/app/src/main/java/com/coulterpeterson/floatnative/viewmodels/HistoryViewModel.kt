@@ -140,20 +140,10 @@ class HistoryViewModel : TvSidebarViewModel() {
             card = null
         )
 
-        // Map Channel
-        val channel = post.channel
-        val blogChannel = com.coulterpeterson.floatnative.openapi.models.BlogPostModelV3Channel(
-            id = channel.id,
-            creator = channel.creator,
-            title = channel.title,
-            urlname = channel.urlname,
-            about = channel.about,
-            cover = channel.cover,
-            card = channel.card,
-            icon = channel.icon,
-            order = channel.order,
-            socialLinks = channel.socialLinks
-        )
+        // Wrap the ChannelModel in the sealed BlogPostModelV3Channel — the
+        // ContentPostV3Response we're converting from always carries the full
+        // object, never just the ID.
+        val blogChannel = com.coulterpeterson.floatnative.openapi.models.BlogPostModelV3Channel.AsObject(post.channel)
 
         return com.coulterpeterson.floatnative.openapi.models.BlogPostModelV3(
             id = post.id,

@@ -11,6 +11,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var api = FloatplaneAPI.shared
     @ObservedObject private var themeManager = ThemeManager.shared
+    @ObservedObject private var debugLog = DebugLogManager.shared
     @State private var showLogoutConfirmation = false
 
     // Enhanced LTT Search
@@ -227,6 +228,41 @@ struct SettingsView: View {
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 8)
+                    #endif
+
+                    // Debug Log Link — exposes recent API/decode failures so
+                    // users can paste them into a bug report.
+                    #if !os(tvOS)
+                    NavigationLink {
+                        DebugLogView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "ladybug")
+                                .font(.title3)
+                            Text("Debug Log")
+                                .font(.body)
+                                .fontWeight(.semibold)
+                            Spacer()
+                            if !debugLog.entries.isEmpty {
+                                Text("\(debugLog.entries.count)")
+                                    .font(.caption)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(Color.orange)
+                                    .clipShape(Capsule())
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(Color.adaptiveSecondaryText)
+                        }
+                        .foregroundColor(Color.adaptiveText)
+                        .padding()
+                        .background(Color.adaptiveSecondaryBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
                     #endif
 
                     // Logout Button

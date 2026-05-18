@@ -1,0 +1,297 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/v3/comment?blogPost=USWZwxRfFq&limit=20"
+  },
+  "response": {
+    "status": 200,
+    "body": [
+      {
+        "id": "69fdc8a835886fc56e2e36a4",
+        "blogPost": "USWZwxRfFq",
+        "user": {
+          "id": "6720015518dc55c2e447c368",
+          "username": "hear_my_moo",
+          "badges": [
+            "69fbc38c03fb6633d069aae6",
+            "69fbc38af37f822060b89a88",
+            "69fbc379792d9729ab1553e6"
+          ],
+          "profileImage": {
+            "width": 720,
+            "height": 720,
+            "path": "https://pbs.floatplane.com/profile_images/6720015518dc55c2e447c368/632901720179362_1730150856705.jpeg",
+            "childImages": [
+              {
+                "width": 100,
+                "height": 100,
+                "path": "https://pbs.floatplane.com/profile_images/6720015518dc55c2e447c368/632901720179362_1730150856705_100x100.jpeg"
+              },
+              {
+                "width": 250,
+                "height": 250,
+                "path": "https://pbs.floatplane.com/profile_images/6720015518dc55c2e447c368/632901720179362_1730150856705_250x250.jpeg"
+              }
+            ]
+          }
+        },
+        "text": "Is anyone *really* surprised that Nintendo just keep remaking their old titles? \n\n\nIt's been decades since Nintendo genuinely broke ground on something. \n\n\n*Everything* they do is old IPs and old technology at premium prices. \n\n\nThe only thing that *is* surprising is the fact that millions around the world still fall for this.\n\n\n.\n\n\nWow... Angry Birds or Ms Pac-Man getting onto that list before PUBG, Fortnite, CoD or LoL is *interesting* considering the global impact that those titles have had... ",
+        "totalReplies": 0,
+        "replies": [],
+        "replying": null,
+        "postDate": "2026-05-08T11:27:36.481Z",
+        "editDate": "2026-05-08T11:35:22.052Z",
+        "pinDate": null,
+        "deletionDate": null,
+        "editCount": 2,
+        "isEdited": true,
+        "likes": 0,
+        "dislikes": 0,
+        "score": 0,
+        "userInteraction": null,
+        "interactionCounts": {
+          "like": 0,
+          "dislike": 0
+        }
+      },
+      {
+        "id": "69fdbd659aa3c51e2e4ae61d",
+        "blogPost": "USWZwxRfFq",
+        "user": {
+          "id": "5df80b488fae298fb14cf46e",
+          "username": "deathbybandaid",
+          "badges": [
+            "69fbc3a24438630a8efb69df"
+          ],
+          "profileImage": {
+            "width": 256,
+            "height": 256,
+            "path": "https://pbs.floatplane.com/profile_images/5df80b488fae298fb14cf46e/991930538522260_1636400529417.jpeg",
+            "childImages": [
+              {
+                "width": 250,
+                "height": 250,
+                "path": "https://pbs.floatplane.com/profile_images/5df80b488fae298fb14cf46e/991930538522260_1636400529417_250x250.jpeg"
+              },
+              {
+                "width": 100,
+                "height": 100,
+                "path": "https://pbs.floatplane.com/profile_images/5df80b488fae298fb14cf46e/991930538522260_1636400529417_100x100.jpeg"
+              }
+            ]
+          }
+        },
+        "text": "The end sounded like \"You wouldn't Nacho up\".... I sure would",
+        "totalReplies": 0,
+        "replies": [],
+        "replying": null,
+        "postDate": "2026-05-08T10:39:33.680Z",
+        "editDate": "2026-05-08T10:39:33.680Z",
+        "pinDate": null,
+        "deletionDate": null,
+        "editCount": 0,
+        "isEdited": false,
+        "likes": 1,
+        "dislikes": 0,
+        "score": 1,
+        "userInteraction": null,
+        "interactionCounts": {
+          "like": 1,
+          "dislike": 0
+        }
+      },
+      {
+        "id": "69fd6f6753ea9c0785908bab",
+        "blogPost": "USWZwxRfFq",
+        "user": {
+          "id": "5ca8e49a321c9e51bcf6cc5f",
+          "username": "N1BBL35",
+          "badges": [
+            "69fbc351bb18dc6b2256987b",
+            "69fbc379792d9729ab1553e6",
+            "69fbc38c03fb6633d069aae6"
+          ],
+          "profileImage": {
+            "width": 512,
+            "height": 512,
+            "path": "https://pbs.floatplane.com/profile_images/default/user1.png",
+            "childImages": [
+              {
+                "width": 250,
+                "height": 250,
+                "path": "https://pbs.floatplane.com/profile_images/default/user1_250x250.png"
+              },
+              {
+                "width": 100,
+                "height": 100,
+                "path": "https://pbs.floatplane.com/profile_images/default/user1_100x100.png"
+              }
+            ]
+          }
+        },
+        "text": "Oh snap! Rochester in the news and not for a polarizing political reason or social injustice?!  It's possible?! Who knew?!\nAlthough passing over megaman for angry birds might be considered a social injustice... ",
+        "totalReplies": 0,
+        "replies": [],
+        "replying": null,
+        "postDate": "2026-05-08T05:06:47.938Z",
+        "editDate": "2026-05-08T05:06:47.938Z",
+        "pinDate": null,
+        "deletionDate": null,
+        "editCount": 0,
+        "isEdited": false,
+        "likes": 0,
+        "dislikes": 0,
+        "score": 0,
+        "userInteraction": null,
+        "interactionCounts": {
+          "like": 0,
+          "dislike": 0
+        }
+      },
+      {
+        "id": "69fd40a82ad1a86debfbe82b",
+        "blogPost": "USWZwxRfFq",
+        "user": {
+          "id": "617cc75f749c328162211bcb",
+          "username": "Nerdllaw",
+          "badges": [
+            "69fbc351bb18dc6b2256987b",
+            "69fbc3a24438630a8efb69df",
+            "69fd2e769aa3c538754ae16e"
+          ],
+          "profileImage": {
+            "width": 512,
+            "height": 512,
+            "path": "https://pbs.floatplane.com/profile_images/default/user5.png",
+            "childImages": [
+              {
+                "width": 250,
+                "height": 250,
+                "path": "https://pbs.floatplane.com/profile_images/default/user5_250x250.png"
+              },
+              {
+                "width": 100,
+                "height": 100,
+                "path": "https://pbs.floatplane.com/profile_images/default/user5_100x100.png"
+              }
+            ]
+          }
+        },
+        "text": "Never heard of R.U.S.E gonna have to check it out!",
+        "totalReplies": 0,
+        "replies": [],
+        "replying": null,
+        "postDate": "2026-05-08T01:47:20.589Z",
+        "editDate": "2026-05-08T01:47:20.589Z",
+        "pinDate": null,
+        "deletionDate": null,
+        "editCount": 0,
+        "isEdited": false,
+        "likes": 0,
+        "dislikes": 0,
+        "score": 0,
+        "userInteraction": null,
+        "interactionCounts": {
+          "like": 0,
+          "dislike": 0
+        }
+      },
+      {
+        "id": "69fd3d3cc6fd79d8b0842d71",
+        "blogPost": "USWZwxRfFq",
+        "user": {
+          "id": "680c277e932f8e69e8f8bc41",
+          "username": "SireJoe",
+          "badges": [
+            "69fbc379792d9729ab1553e6",
+            "69fbc38af37f822060b89a88",
+            "69fbc38c03fb6633d069aae6"
+          ],
+          "profileImage": {
+            "width": 512,
+            "height": 512,
+            "path": "https://pbs.floatplane.com/profile_images/default/user6.png",
+            "childImages": [
+              {
+                "width": 250,
+                "height": 250,
+                "path": "https://pbs.floatplane.com/profile_images/default/user6_250x250.png"
+              },
+              {
+                "width": 100,
+                "height": 100,
+                "path": "https://pbs.floatplane.com/profile_images/default/user6_100x100.png"
+              }
+            ]
+          }
+        },
+        "text": "I can't stop poppin' them bits!",
+        "totalReplies": 0,
+        "replies": [],
+        "replying": null,
+        "postDate": "2026-05-08T01:32:44.419Z",
+        "editDate": "2026-05-08T01:32:44.419Z",
+        "pinDate": null,
+        "deletionDate": null,
+        "editCount": 0,
+        "isEdited": false,
+        "likes": 0,
+        "dislikes": 0,
+        "score": 0,
+        "userInteraction": null,
+        "interactionCounts": {
+          "like": 0,
+          "dislike": 0
+        }
+      },
+      {
+        "id": "69fd3ccd33c6d04b9d3b2b89",
+        "blogPost": "USWZwxRfFq",
+        "user": {
+          "id": "604a65b96a7b0507bb01efcc",
+          "username": "johnnybskillz",
+          "badges": [
+            "69fbc351bb18dc6b2256987b",
+            "69fbc379792d9729ab1553e6",
+            "69fbc38c03fb6633d069aae6"
+          ],
+          "profileImage": {
+            "width": 720,
+            "height": 720,
+            "path": "https://pbs.floatplane.com/profile_images/604a65b96a7b0507bb01efcc/712904112597890_1737661698134.jpeg",
+            "childImages": [
+              {
+                "width": 100,
+                "height": 100,
+                "path": "https://pbs.floatplane.com/profile_images/604a65b96a7b0507bb01efcc/712904112597890_1737661698134_100x100.jpeg"
+              },
+              {
+                "width": 250,
+                "height": 250,
+                "path": "https://pbs.floatplane.com/profile_images/604a65b96a7b0507bb01efcc/712904112597890_1737661698134_250x250.jpeg"
+              }
+            ]
+          }
+        },
+        "text": "Still calling it the Jaming News. \n\nAlso, that starfox face tracking was crazy! I don't care to buy the game, but I know a few people who are long time fans and were super excited! Happy for them! Here is hoping a Mercury Steam remake of Super Metroid gets properly announced soon!",
+        "totalReplies": 0,
+        "replies": [],
+        "replying": null,
+        "postDate": "2026-05-08T01:30:53.905Z",
+        "editDate": "2026-05-08T01:30:53.905Z",
+        "pinDate": null,
+        "deletionDate": null,
+        "editCount": 0,
+        "isEdited": false,
+        "likes": 0,
+        "dislikes": 0,
+        "score": 0,
+        "userInteraction": null,
+        "interactionCounts": {
+          "like": 0,
+          "dislike": 0
+        }
+      }
+    ]
+  }
+}

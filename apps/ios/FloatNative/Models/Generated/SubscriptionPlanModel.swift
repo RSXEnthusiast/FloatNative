@@ -19,13 +19,17 @@ public struct SubscriptionPlanModel: Codable, JSONEncodable, Hashable {
     public var priceYearly: String?
     public var currency: String
     public var logo: String?
-    public var interval: String
+    // Real responses observed in production omit `interval` on subscriptionPlans
+    // attached to creators in /api/v3/content/creator/list (e.g. LTT). Marked
+    // optional via packages/openapi/spec-overlay.json so future regenerations
+    // stay loose.
+    public var interval: String?
     public var featured: Bool
     public var allowGrandfatheredAccess: Bool?
     public var discordServers: [DiscordServerModel]
     public var discordRoles: [DiscordRoleModel]
 
-    public init(id: String, title: String, description: String, price: String?, priceYearly: String? = nil, currency: String, logo: String?, interval: String, featured: Bool, allowGrandfatheredAccess: Bool? = nil, discordServers: [DiscordServerModel], discordRoles: [DiscordRoleModel]) {
+    public init(id: String, title: String, description: String, price: String?, priceYearly: String? = nil, currency: String, logo: String?, interval: String? = nil, featured: Bool, allowGrandfatheredAccess: Bool? = nil, discordServers: [DiscordServerModel], discordRoles: [DiscordRoleModel]) {
         self.id = id
         self.title = title
         self.description = description
@@ -66,7 +70,7 @@ public struct SubscriptionPlanModel: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(priceYearly, forKey: .priceYearly)
         try container.encode(currency, forKey: .currency)
         try container.encode(logo, forKey: .logo)
-        try container.encode(interval, forKey: .interval)
+        try container.encodeIfPresent(interval, forKey: .interval)
         try container.encode(featured, forKey: .featured)
         try container.encodeIfPresent(allowGrandfatheredAccess, forKey: .allowGrandfatheredAccess)
         try container.encode(discordServers, forKey: .discordServers)

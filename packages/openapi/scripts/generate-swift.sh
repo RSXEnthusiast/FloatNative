@@ -11,6 +11,7 @@ set -e  # Exit on error
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPENAPI_DIR="$(dirname "$SCRIPT_DIR")"  # packages/openapi
 SPEC_FILE="$OPENAPI_DIR/floatplane-openapi-specification.json"
+OVERLAY_FILE="$OPENAPI_DIR/spec-overlay.json"
 IOS_PROJECT_DIR="$OPENAPI_DIR/../../apps/ios"
 PROJECT_MODELS_DIR="$IOS_PROJECT_DIR/FloatNative/Models/Generated"
 
@@ -24,6 +25,7 @@ fi
 # Use temporary directory for generation (auto-cleaned up)
 TEMP_OUTPUT_DIR=$(mktemp -d -t floatplane-openapi)
 GENERATED_MODELS_DIR="$TEMP_OUTPUT_DIR/Sources/OpenAPIClient/Models"
+MERGED_SPEC="$TEMP_OUTPUT_DIR/spec-merged.json"
 
 # Ensure cleanup on exit (even if script fails)
 trap "rm -rf '$TEMP_OUTPUT_DIR'" EXIT
@@ -32,10 +34,19 @@ echo "🔄 Generating Floatplane API models..."
 echo "📁 Using spec: $SPEC_FILE"
 echo "📁 Using temporary staging: $TEMP_OUTPUT_DIR"
 
+# Apply local overlay (loosened required fields, missing properties, etc.)
+# so iOS and Android both pick up the same overrides.
+if [ -f "$OVERLAY_FILE" ]; then
+    echo "🩹 Applying spec overlay: $OVERLAY_FILE"
+    python3 "$SCRIPT_DIR/apply-overlay.py" "$MERGED_SPEC"
+else
+    cp "$SPEC_FILE" "$MERGED_SPEC"
+fi
+
 # Generate models to temporary directory
 echo "🏗️  Generating Swift5 models..."
 openapi-generator generate \
-    -i "$SPEC_FILE" \
+    -i "$MERGED_SPEC" \
     -g swift5 \
     -o "$TEMP_OUTPUT_DIR" \
     --additional-properties=responseAs=AsyncAwait,useSPMFileStructure=true \

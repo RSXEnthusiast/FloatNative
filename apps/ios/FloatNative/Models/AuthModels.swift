@@ -48,27 +48,6 @@ struct ActivityItem: Codable {
     let post: BlogPost?
 }
 
-// MARK: - User Links
-
-struct UserLinks: Codable {
-    let twitter: SocialLink?
-    let youtube: SocialLink?
-    let instagram: SocialLink?
-    let website: SocialLink?
-    let facebook: SocialLink?
-    let twitch: SocialLink?
-}
-
-struct SocialLink: Codable {
-    let value: String
-    let type: SocialLinkType?
-}
-
-struct SocialLinkType: Codable {
-    let id: String
-    let name: String
-}
-
 // MARK: - Notification Settings
 
 struct NotificationSetting: Codable {

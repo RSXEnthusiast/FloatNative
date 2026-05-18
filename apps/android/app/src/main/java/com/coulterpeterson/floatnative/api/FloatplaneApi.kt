@@ -73,10 +73,26 @@ object FloatplaneApi {
     fun init(context: Context) {
         tokenManager = TokenManager(context)
 
-        moshi = Serializer.moshiBuilder.build()
-            
+        // Custom type adapters must precede KotlinJsonAdapterFactory in the
+        // factory chain — Moshi tries factories in registration order and the
+        // Kotlin reflect adapter is greedy. See utils/MoshiSetup.kt.
+        moshi = com.coulterpeterson.floatnative.utils.buildAppMoshi()
+
+        // BuildConfig.DEBUG gates body-level HTTP logging — production builds
+        // never print credentials, refresh tokens, or sails.sid cookies.
+        val isDebug = com.coulterpeterson.floatnative.BuildConfig.DEBUG
         loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY // TODO: Reduce level in production
+            level = if (isDebug) {
+                HttpLoggingInterceptor.Level.HEADERS
+            } else {
+                HttpLoggingInterceptor.Level.BASIC
+            }
+            // Hide secret-bearing headers even in debug.
+            redactHeader("Authorization")
+            redactHeader("DPoP")
+            redactHeader("Cookie")
+            redactHeader("Set-Cookie")
+            redactHeader("DPoP-Nonce")
         }
 
         // OAuth Client with logging but NO AuthInterceptor (to avoid cycles)

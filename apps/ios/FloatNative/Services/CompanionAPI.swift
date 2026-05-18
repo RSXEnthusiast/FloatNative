@@ -130,7 +130,13 @@ class CompanionAPI: ObservableObject {
 
                 return try decoder.decode(T.self, from: data)
             } catch {
-
+                let summary = DecodingErrorFormatter.summary(error)
+                let body = String(data: data, encoding: .utf8) ?? "<non-utf8 \(data.count) bytes>"
+                let snippet = body.count > 4096 ? String(body.prefix(4096)) + "\n…(truncated)" : body
+                DebugLogManager.shared.append(.decode(
+                    message: "companion decode failed on \(endpoint): \(summary)",
+                    verbose: "\(DecodingErrorFormatter.verbose(error))\n\nResponse body:\n\(snippet)"
+                ))
                 throw CompanionAPIError.decodingError(error)
             }
         } catch let error as CompanionAPIError {

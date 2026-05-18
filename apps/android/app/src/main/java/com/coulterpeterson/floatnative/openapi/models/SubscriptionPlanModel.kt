@@ -59,8 +59,12 @@ data class SubscriptionPlanModel (
     @Json(name = "logo")
     val logo: kotlin.String?,
 
+    // Real responses observed in production omit `interval` on subscriptionPlans
+    // attached to creators in /api/v3/content/creator/list (e.g. LTT). Marked
+    // optional via packages/openapi/spec-overlay.json so future regenerations
+    // stay loose.
     @Json(name = "interval")
-    val interval: kotlin.String,
+    val interval: kotlin.String? = null,
 
     @Json(name = "featured")
     val featured: kotlin.Boolean,

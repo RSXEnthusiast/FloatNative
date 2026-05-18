@@ -18,6 +18,12 @@ logs/
 .env.local
 .env.*.local
 
+# Android signing credentials — keep `keystore.properties.example` tracked,
+# never the real one or any keystore file.
+keystore.properties
+*.jks
+*.keystore
+
 # AI
 .claude/
 .gemini/

@@ -171,8 +171,28 @@ class HomeFeedViewModel : TvSidebarViewModel() {
                 }
 
             } catch (e: Exception) {
-                _state.value = HomeFeedState.Error(e.message ?: "Unknown error")
+                // Format JSON parse errors with the path that failed so bug
+                // reports include something actionable, not just "missing".
+                val message = formatLoadFailure(e)
+                android.util.Log.e("HomeFeedViewModel", "loadFeed failed", e)
+                com.coulterpeterson.floatnative.utils.DebugLogManager.api(
+                    "Home feed load failed: $message",
+                    android.util.Log.getStackTraceString(e).take(4096)
+                )
+                _state.value = HomeFeedState.Error(message)
             }
+        }
+    }
+
+    private fun formatLoadFailure(e: Throwable): String {
+        val msg = e.message ?: e.javaClass.simpleName
+        // Moshi raises JsonDataException with messages like
+        // "Required value 'isFeatured' missing at $.blogPosts[7].metadata"
+        // — surface that path verbatim so users can copy/paste it.
+        return when (e) {
+            is com.squareup.moshi.JsonDataException -> "Decode failed: $msg"
+            is com.squareup.moshi.JsonEncodingException -> "Bad JSON: $msg"
+            else -> msg
         }
     }
 

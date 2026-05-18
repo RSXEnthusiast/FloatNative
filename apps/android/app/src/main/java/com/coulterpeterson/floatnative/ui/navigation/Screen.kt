@@ -19,6 +19,7 @@ sealed class Screen(val route: String, val title: String? = null, val icon: Imag
     // Secondary Screens
     object History : Screen("history")
     object Settings : Screen("settings")
+    object DebugLog : Screen("debug_log")
     object VideoPlayer : Screen("player/{videoId}") {
         fun createRoute(videoId: String) = "player/$videoId"
     }
