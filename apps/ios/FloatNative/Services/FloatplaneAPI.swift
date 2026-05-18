@@ -401,18 +401,15 @@ class FloatplaneAPI: ObservableObject {
             }
         }
         
+        // Per-request auth/DPoP tracing was filling the console with multi-KB
+        // JWTs on every API call. Set FLOATNATIVE_LOG_REQUEST_AUTH=1 in the
+        // scheme's environment to re-enable when actually debugging auth.
         #if DEBUG
-        if let auth = urlRequest.value(forHTTPHeaderField: "Authorization") {
-            print("Auth: \(auth.prefix(20))...")
-        } else {
-            print("Auth: NONE")
+        if ProcessInfo.processInfo.environment["FLOATNATIVE_LOG_REQUEST_AUTH"] == "1" {
+            let auth = urlRequest.value(forHTTPHeaderField: "Authorization").map { "\($0.prefix(20))…" } ?? "NONE"
+            let dpop = urlRequest.value(forHTTPHeaderField: "DPoP") != nil ? "present" : "MISSING"
+            print("→ \(urlRequest.httpMethod ?? "?") \(endpoint)  auth=\(auth)  dpop=\(dpop)")
         }
-        if let dpop = urlRequest.value(forHTTPHeaderField: "DPoP") {
-            print("DPoP Headers: \(dpop)")
-        } else {
-            print("DPoP Headers: MISSING")
-        }
-        print("-------------------------------")
         #endif
 
         // Encode body if present
@@ -594,21 +591,22 @@ class FloatplaneAPI: ObservableObject {
         request.httpBody = bodyString.data(using: .utf8)
 
         #if DEBUG
-        // Redact secret-bearing fields so credentials never land in console logs.
-        let sensitiveKeys: Set<String> = [
-            "refresh_token", "access_token", "code", "device_code",
-            "code_verifier", "client_secret", "password", "username",
-        ]
-        let redactedBody = body.map { key, value -> String in
-            if sensitiveKeys.contains(key) {
-                let prefix = String(value.prefix(4))
-                return "\(key)=\(prefix)…(redacted, len=\(value.count))"
-            }
-            return "\(key)=\(value)"
-        }.joined(separator: "&")
-        print("Body: \(redactedBody)")
-        print("DPoP Headers: \(request.value(forHTTPHeaderField: "DPoP") != nil ? "present" : "MISSING")")
-        print("--------------------------------")
+        if ProcessInfo.processInfo.environment["FLOATNATIVE_LOG_REQUEST_AUTH"] == "1" {
+            // Redact secret-bearing fields so credentials never land in console logs.
+            let sensitiveKeys: Set<String> = [
+                "refresh_token", "access_token", "code", "device_code",
+                "code_verifier", "client_secret", "password", "username",
+            ]
+            let redactedBody = body.map { key, value -> String in
+                if sensitiveKeys.contains(key) {
+                    let prefix = String(value.prefix(4))
+                    return "\(key)=\(prefix)…(redacted, len=\(value.count))"
+                }
+                return "\(key)=\(value)"
+            }.joined(separator: "&")
+            let dpop = request.value(forHTTPHeaderField: "DPoP") != nil ? "present" : "MISSING"
+            print("→ \(method) \(endpoint)  dpop=\(dpop)  body=\(redactedBody)")
+        }
         #endif
 
         let (data, response) = try await session.data(for: request)

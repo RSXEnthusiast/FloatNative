@@ -106,6 +106,7 @@ class AVPlayerManager: NSObject, ObservableObject {
         setupAudioSession()
         setupRemoteCommandCenter()
         setupBackgroundObserver()
+        setupAudioInterruptionObserver()
     }
 
     // MARK: - Audio Session Setup
@@ -115,8 +116,59 @@ class AVPlayerManager: NSObject, ObservableObject {
             // Configure audio session for background playback
             try audioSession.setCategory(.playback, mode: .moviePlayback)
             try audioSession.setActive(true)
+            logAudioSession(tag: "setupAudioSession")
         } catch {
             print("⚠️ Failed to setup audio session: \(error)")
+        }
+    }
+
+    /// Lock-screen audio diagnostic helper. Emits a single line so the console
+    /// stays scannable. Toggle off by setting FLOATNATIVE_LOG_AUDIO=0 in the
+    /// scheme env when you don't need it.
+    private func logAudioSession(tag: String) {
+        #if DEBUG
+        guard ProcessInfo.processInfo.environment["FLOATNATIVE_LOG_AUDIO"] != "0" else { return }
+        let session = AVAudioSession.sharedInstance()
+        let route = session.currentRoute.outputs.map { $0.portType.rawValue }.joined(separator: ",")
+        print("🎧 [\(tag)] cat=\(session.category.rawValue) mode=\(session.mode.rawValue) " +
+              "otherPlaying=\(session.isOtherAudioPlaying) route=\(route) " +
+              "rate=\(player?.rate ?? 0) timeControl=\(player?.timeControlStatus.rawValue ?? -1) " +
+              "pipActive=\(isPIPActive) appState=\(UIApplication.shared.applicationState.rawValue)")
+        #endif
+    }
+
+    /// Observe AVAudioSession interruptions (phone calls, alarms, other apps
+    /// taking audio focus). Without re-activating on .ended the session stays
+    /// inactive and the next play() can't actually start audio.
+    private func setupAudioInterruptionObserver() {
+        NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self,
+                  let info = notification.userInfo,
+                  let raw = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+                  let type = AVAudioSession.InterruptionType(rawValue: raw)
+            else { return }
+
+            switch type {
+            case .began:
+                print("🎧 [audio interruption began]")
+                self.logAudioSession(tag: "interruption-began")
+            case .ended:
+                let optionsRaw = info[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
+                let options = AVAudioSession.InterruptionOptions(rawValue: optionsRaw)
+                print("🎧 [audio interruption ended] shouldResume=\(options.contains(.shouldResume))")
+                do {
+                    try self.audioSession.setActive(true)
+                } catch {
+                    print("⚠️ Failed to re-activate audio session after interruption: \(error)")
+                }
+                self.logAudioSession(tag: "interruption-ended")
+            @unknown default:
+                break
+            }
         }
     }
 
@@ -174,9 +226,35 @@ class AVPlayerManager: NSObject, ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
+            guard let self else { return }
+            self.logAudioSession(tag: "willResignActive")
             Task { @MainActor in
-                await self?.saveProgress()
+                await self.saveProgress()
             }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.logAudioSession(tag: "didEnterBackground")
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.logAudioSession(tag: "willEnterForeground")
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.logAudioSession(tag: "didBecomeActive")
         }
     }
 
@@ -521,9 +599,15 @@ class AVPlayerManager: NSObject, ObservableObject {
         updateNowPlayingInfo()
         startProgressTimer()
         setIdleTimerDisabled(true)  // Keep screen awake during playback
+        logAudioSession(tag: "play")
     }
 
     func pause() {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["FLOATNATIVE_LOG_AUDIO"] != "0" {
+            print("🎧 [pause called] caller: \(Thread.callStackSymbols.dropFirst().first ?? "?")")
+        }
+        #endif
         player?.pause()
         updateNowPlayingInfo()
         stopProgressTimer()

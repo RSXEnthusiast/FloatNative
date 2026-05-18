@@ -357,16 +357,7 @@ struct VideoPlayerView: View {
 
     private func loadInteractionState() async {
         do {
-            print("📱 [VideoPlayerView.loadInteractionState] Fetching detailed post for ID: \(post.id)")
             let detailedPost = try await api.getBlogPost(id: post.id)
-
-            print("📱 [VideoPlayerView.loadInteractionState] Detailed post response:")
-            print("📱   ID: \(detailedPost.id)")
-            print("📱   Likes: \(detailedPost.likes)")
-            print("📱   Dislikes: \(detailedPost.dislikes)")
-            print("📱   Self interaction: \(String(describing: detailedPost.selfUserInteraction))")
-            print("📱   Full detailed post: \(detailedPost)")
-
             await MainActor.run {
                 // Update counts with server values
                 currentLikes = detailedPost.likes
@@ -375,7 +366,7 @@ struct VideoPlayerView: View {
             }
         } catch {
             // Silently fail - likes/dislikes are not critical
-            print("📱 [VideoPlayerView.loadInteractionState] Failed to load interaction state: \(error)")
+            print("⚠️ [VideoPlayerView] Failed to load interaction state: \(error)")
         }
     }
 
