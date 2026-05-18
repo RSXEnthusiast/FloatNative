@@ -42,6 +42,13 @@ fun SettingsScreen(
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
+    var showDonateDialog by remember { mutableStateOf(false) }
+    if (showDonateDialog) {
+        com.coulterpeterson.floatnative.ui.components.DonateDialog(
+            onDismiss = { showDonateDialog = false }
+        )
+    }
+
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
@@ -176,11 +183,16 @@ fun SettingsScreen(
             item {
                 Text("Support", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
+                ListItem(
+                    headlineContent = { Text("Donate") },
+                    supportingContent = { Text("Show appreciation via Stripe — opens a QR code") },
+                    modifier = Modifier.clickable { showDonateDialog = true }
+                )
                 ListItem(
                     headlineContent = { Text("Join the Discord to Share Feedback") },
                     modifier = Modifier.clickable {
-                        uriHandler.openUri("https://discord.gg/VvgCsKBwpP") 
+                        uriHandler.openUri("https://discord.gg/VvgCsKBwpP")
                     }
                 )
                 ListItem(
