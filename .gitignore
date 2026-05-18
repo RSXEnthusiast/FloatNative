@@ -46,6 +46,7 @@ apps/chrome-extension/private.pem
 # AI
 .claude/
 .gemini/
+CLAUDE.md
 
 # Node
 node_modules
