@@ -197,7 +197,10 @@ struct SettingsView: View {
                     .padding(.horizontal)
                     #endif
 
-                    // Donate Button — opens a QR-code modal pointing at Stripe.
+                    // Donate Button — on iOS open the Stripe page directly in
+                    // a browser; on tvOS show a QR modal (the only practical
+                    // way to pay on a TV).
+                    #if os(tvOS)
                     Button {
                         showDonateSheet = true
                     } label: {
@@ -212,10 +215,23 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                     }
-                    #if !os(tvOS)
-                    .liquidGlass(tint: .pink, opacity: 0.6)
-                    #endif
                     .padding(.horizontal)
+                    #else
+                    Link(destination: URL(string: DonationURL.stripe)!) {
+                        HStack {
+                            Image(systemName: "heart.fill")
+                                .font(.title3)
+                            Text("Support / Donate")
+                                .font(.body)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.pink)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                    }
+                    .liquidGlass(tint: .pink, opacity: 0.6)
+                    .padding(.horizontal)
+                    #endif
 
                     // YouTube Subscribe Button
                     #if !os(tvOS)
