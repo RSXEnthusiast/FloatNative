@@ -167,6 +167,13 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
         controller.player = player
         controller.showsPlaybackControls = showsPlaybackControls
         controller.allowsPictureInPicturePlayback = true
+        #if !os(tvOS)
+        // Auto-enter PiP when the app backgrounds (lock screen, app switcher).
+        // Without this, AVPlayerViewController pauses inline playback on lock
+        // even though `audio` is in UIBackgroundModes and the audio session
+        // is `.playback`.
+        controller.canStartPictureInPictureAutomaticallyFromInline = true
+        #endif
         controller.delegate = context.coordinator
 
         #if os(tvOS)
