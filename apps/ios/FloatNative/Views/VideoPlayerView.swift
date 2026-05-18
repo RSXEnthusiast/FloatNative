@@ -203,9 +203,28 @@ struct VideoPlayerView: View {
             if post.metadata.hasVideo {
                 // Video post - show player
                 if let player = playerManager.player {
-                    CustomVideoPlayer(player: player, showsPlaybackControls: true)
-                        .frame(maxWidth: .infinity)
-                        .aspectRatio(16/9, contentMode: .fit)
+                    ZStack(alignment: .topTrailing) {
+                        CustomVideoPlayer(player: player, showsPlaybackControls: true)
+                            .frame(maxWidth: .infinity)
+                            .aspectRatio(16/9, contentMode: .fit)
+
+                        #if !os(tvOS)
+                        // Force-landscape button — overrides system rotation
+                        // lock the way YouTube / Floatplane's own apps do.
+                        Button {
+                            playerManager.forceLandscape()
+                        } label: {
+                            Image(systemName: "rectangle.landscape.rotate")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(Color.black.opacity(0.55))
+                                .clipShape(Circle())
+                        }
+                        .padding(8)
+                        .accessibilityLabel("Force landscape")
+                        #endif
+                    }
                 } else {
                     Rectangle()
                         .fill(Color.black)

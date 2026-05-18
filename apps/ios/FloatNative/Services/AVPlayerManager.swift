@@ -674,6 +674,29 @@ class AVPlayerManager: NSObject, ObservableObject {
         }
     }
 
+    #if !os(tvOS)
+    /// Force the device into landscape orientation and enter native fullscreen,
+    /// overriding the system rotation lock. Mirrors what YouTube / the official
+    /// Floatplane app do when you tap their rotate-to-landscape button.
+    ///
+    /// Uses iOS 16's `requestGeometryUpdate` API; deployment target is 18.5+
+    /// so the availability check is just defensive.
+    func forceLandscape() {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive })
+        else { return }
+
+        if #available(iOS 16.0, *) {
+            scene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape)) { _ in
+                // Errors here (e.g. user-locked rotation refusing) are non-fatal;
+                // the system still lets us trigger fullscreen below.
+            }
+        }
+        enterFullScreen()
+    }
+    #endif
+
     func reset() {
         cleanupPlayer()
         currentVideoId = nil
