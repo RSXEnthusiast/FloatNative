@@ -24,6 +24,25 @@ keystore.properties
 *.jks
 *.keystore
 
+# Go API database dumps — schema belongs in packages/api-go/migrations/, never
+# commit dumps. Previously leaked a user API key; removed from history via
+# git-filter-repo. Add new dump filenames here if you generate them.
+packages/api-go/d1_dump.sql
+packages/api-go/postgres_import.sql
+
+# Debug captures — never commit. temp-har / temp-tv previously leaked the
+# owner's Floatplane userId, watch-later contents, and analytics tokens via
+# raw HAR exports and Android TV logcat dumps. Removed from history via
+# git-filter-repo.
+/temp-*
+*.har
+
+# Chrome extension signing key — never commit. The extension's private.pem
+# is its cryptographic identity in the Chrome Web Store; a leaked key lets
+# anyone publish updates impersonating the extension. Previously leaked;
+# removed from history via git-filter-repo. Rotate before re-publishing.
+apps/chrome-extension/private.pem
+
 # AI
 .claude/
 .gemini/
