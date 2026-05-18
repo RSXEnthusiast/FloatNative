@@ -154,6 +154,10 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
             // Reuse the existing delegate (Coordinator) to maintain callback connection
             existingController.delegate = existingDelegate as? AVPlayerViewControllerDelegate
             existingController.showsPlaybackControls = showsPlaybackControls
+            #if !os(tvOS)
+            existingController.allowsPictureInPicturePlayback = true
+            existingController.canStartPictureInPictureAutomaticallyFromInline = true
+            #endif
             return existingController
         }
 
@@ -206,6 +210,13 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
 
         // Update playback controls visibility
         uiViewController.showsPlaybackControls = showsPlaybackControls
+
+        #if !os(tvOS)
+        // Re-assert auto-PiP-from-inline on every update so reused / mutated
+        // controllers can't end up without it. See makeUIViewController.
+        uiViewController.allowsPictureInPicturePlayback = true
+        uiViewController.canStartPictureInPictureAutomaticallyFromInline = true
+        #endif
 
         #if os(tvOS)
         // Always apply transport bar items when they change
@@ -301,5 +312,34 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
         func playerViewController(_ playerViewController: AVPlayerViewController, failedToStartPictureInPictureWithError error: Error) {
             print("🎬 PiP: Failed to start - \(error.localizedDescription)")
         }
+
+        #if !os(tvOS)
+        // MARK: - Fullscreen transitions
+
+        // AVPlayerViewController often pauses the player when leaving
+        // fullscreen. If the user was playing when they exited, restart
+        // playback after the transition. Also force the device back to
+        // portrait so the AVPlayerViewController's built-in close button
+        // acts as a "back to portrait" toggle when system rotation lock is
+        // engaged (otherwise the inline view would render rotated).
+        func playerViewController(
+            _ playerViewController: AVPlayerViewController,
+            willEndFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator
+        ) {
+            // Capture state synchronously — we're already on the main thread
+            // when UIKit fires this delegate, but the compiler needs us to
+            // tell it explicitly that AVPlayerManager touches are main-isolated.
+            let wasPlaying = MainActor.assumeIsolated { AVPlayerManager.shared.isPlaying }
+
+            coordinator.animate(alongsideTransition: nil) { _ in
+                MainActor.assumeIsolated {
+                    if wasPlaying {
+                        AVPlayerManager.shared.play()
+                    }
+                    AVPlayerManager.shared.forcePortrait()
+                }
+            }
+        }
+        #endif
     }
 }

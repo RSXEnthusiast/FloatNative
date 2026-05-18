@@ -505,6 +505,18 @@ class AVPlayerManager: NSObject, ObservableObject {
     // MARK: - Playback Controls
 
     func play() {
+        // Re-activate the audio session every time we start playback. The
+        // session can get deactivated by other apps grabbing audio focus,
+        // by a phone call ending, or by iOS reclaiming it during long
+        // pauses — without this, lock-screen / background audio stops on
+        // the next play.
+        do {
+            try audioSession.setCategory(.playback, mode: .moviePlayback)
+            try audioSession.setActive(true)
+        } catch {
+            print("⚠️ Failed to (re)activate audio session on play: \(error)")
+        }
+
         player?.play()
         updateNowPlayingInfo()
         startProgressTimer()
@@ -682,18 +694,27 @@ class AVPlayerManager: NSObject, ObservableObject {
     /// Uses iOS 16's `requestGeometryUpdate` API; deployment target is 18.5+
     /// so the availability check is just defensive.
     func forceLandscape() {
+        requestOrientation(.landscape)
+        enterFullScreen()
+    }
+
+    /// Mirror of `forceLandscape()` — invoked when the user exits fullscreen
+    /// or otherwise wants to return to portrait while rotation lock is on.
+    func forcePortrait() {
+        requestOrientation(.portrait)
+    }
+
+    private func requestOrientation(_ mask: UIInterfaceOrientationMask) {
         guard let scene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .first(where: { $0.activationState == .foregroundActive })
         else { return }
 
         if #available(iOS 16.0, *) {
-            scene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape)) { _ in
-                // Errors here (e.g. user-locked rotation refusing) are non-fatal;
-                // the system still lets us trigger fullscreen below.
+            scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask)) { _ in
+                // Errors here (e.g. user-locked rotation refusing) are non-fatal.
             }
         }
-        enterFullScreen()
     }
     #endif
 
