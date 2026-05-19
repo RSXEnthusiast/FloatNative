@@ -15,6 +15,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ScreenRotation
+import android.content.pm.ActivityInfo
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -224,6 +226,14 @@ fun VideoPlayerScreen(
                 .fillMaxSize()
                 .background(Color.Black)) {
                 VideoPlayerView(exoPlayer)
+                if (!isInPipMode) {
+                    ForceLandscapeToggle(
+                        isLandscape = true,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp)
+                    )
+                }
             }
         } else {
             // Portrait Layout
@@ -244,7 +254,14 @@ fun VideoPlayerScreen(
                             .background(Color.Black)
                     ) {
                         VideoPlayerView(exoPlayer)
-                        
+
+                        ForceLandscapeToggle(
+                            isLandscape = false,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                        )
+
                         // Cast Session Logic
                         // Cast Session Logic
                         // Use rememberUpdatedState to access current state inside the listener without forcing recreation
@@ -590,6 +607,36 @@ fun VideoPlayerScreen(
     }
 }
 
+
+/**
+ * Top-right overlay on the video player that toggles the activity's
+ * requested orientation. Lets the user force-landscape (and back) without
+ * touching the system auto-rotate setting — matches what the official
+ * Floatplane / YouTube apps offer. Mirror of iOS' AVPlayerManager.forceLandscape().
+ */
+@Composable
+private fun ForceLandscapeToggle(isLandscape: Boolean, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val activity = context as? Activity ?: return
+    IconButton(
+        onClick = {
+            activity.requestedOrientation = if (isLandscape) {
+                ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE
+            }
+        },
+        modifier = modifier
+            .size(40.dp)
+            .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.ScreenRotation,
+            contentDescription = if (isLandscape) "Switch to portrait" else "Force landscape",
+            tint = Color.White,
+        )
+    }
+}
 
 @OptIn(UnstableApi::class)
 @Composable

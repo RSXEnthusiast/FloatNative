@@ -14,6 +14,11 @@
       "body": "Pause playback automatically after a chosen duration. Settings → Playback."
     },
     {
+      "icon": "screen_rotation",
+      "title": "Force Landscape",
+      "body": "Lock to landscape from the player with a single tap, even when system auto-rotate is off."
+    },
+    {
       "icon": "speed",
       "title": "Playback Speed Sticks",
       "body": "Your chosen playback speed now carries from one video to the next."
