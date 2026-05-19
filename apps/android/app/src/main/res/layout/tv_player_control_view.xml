@@ -123,6 +123,23 @@
                 android:focusable="true"/>
 
             <!--
+                Captions toggle (GH #11). Visibility is toggled at runtime
+                by TvVideoPlayerScreen based on whether the loaded video
+                ships caption cues. Tint flips white ↔ floatplane-blue based
+                on whether captions are currently on.
+            -->
+            <ImageButton
+                android:id="@+id/btn_subtitles"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_player_button"
+                android:src="@drawable/ic_subtitles"
+                android:contentDescription="Subtitles"
+                android:padding="8dp"
+                android:focusable="true"
+                android:visibility="gone"/>
+
+            <!--
                 Multi-video parts picker (GH #23). Visibility is toggled at
                 runtime by TvVideoPlayerScreen based on whether the post
                 bundles more than one video attachment.

@@ -66,6 +66,7 @@ fun TvVideoPlayerScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val sidebarMode by viewModel.sidebarMode.collectAsState()
+    val captionsEnabled by viewModel.captionsEnabled.collectAsState()
     
     // ExoPlayer instance from ViewModel
     val exoPlayer = viewModel.player
@@ -113,6 +114,11 @@ fun TvVideoPlayerScreen(
                     )
                     exoPlayer.setMediaItem(mediaItem, resumePosition)
                     exoPlayer.prepare()
+                    // Sync the captions-enabled flow now that a track is
+                    // wired up. The phone uses Media3's built-in CC button
+                    // which manages this state on its own — TV reads our
+                    // flow to tint the btn_subtitles icon.
+                    viewModel.syncCaptionsEnabledFromTrackSelector()
                     
                     if (startTimestamp > 0 && !hasPerformedInitialSeek) {
                         exoPlayer.seekTo(startTimestamp)
@@ -240,6 +246,7 @@ fun TvVideoPlayerScreen(
                                 val btnDislike = playerView.findViewById<android.widget.ImageButton>(com.coulterpeterson.floatnative.R.id.btn_dislike)
                                 val btnDesc = playerView.findViewById<android.widget.ImageButton>(com.coulterpeterson.floatnative.R.id.btn_description)
                                 val btnComments = playerView.findViewById<android.widget.ImageButton>(com.coulterpeterson.floatnative.R.id.btn_comments)
+                                val btnSubtitles = playerView.findViewById<android.widget.ImageButton>(com.coulterpeterson.floatnative.R.id.btn_subtitles)
                                 val btnParts = playerView.findViewById<android.widget.ImageButton>(com.coulterpeterson.floatnative.R.id.btn_parts)
                                 val btnSettings = playerView.findViewById<android.widget.ImageButton>(com.coulterpeterson.floatnative.R.id.btn_settings)
     
@@ -266,6 +273,19 @@ fun TvVideoPlayerScreen(
                                 btnComments?.setOnClickListener {
                                     viewModel.openComments()
                                 }
+
+                                // Subtitles button (GH #11) — only visible when
+                                // the loaded video ships caption cues. Tint
+                                // flips when captions are enabled, same
+                                // pattern as the like/dislike buttons.
+                                val hasCaptions = (state as? VideoPlayerState.Content)
+                                    ?.textTracks
+                                    ?.isNotEmpty() == true
+                                btnSubtitles?.visibility = if (hasCaptions) android.view.View.VISIBLE else android.view.View.GONE
+                                btnSubtitles?.setColorFilter(
+                                    if (captionsEnabled) android.graphics.Color.parseColor("#3FA9F5") else whiteColor
+                                )
+                                btnSubtitles?.setOnClickListener { viewModel.toggleCaptions() }
 
                                 // Parts button (GH #23) — only visible for
                                 // posts with more than one video attachment.

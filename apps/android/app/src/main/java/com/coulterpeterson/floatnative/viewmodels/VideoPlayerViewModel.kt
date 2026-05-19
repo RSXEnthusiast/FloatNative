@@ -97,24 +97,29 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
     val playerAction = _playerAction.asSharedFlow()
 
     @androidx.annotation.OptIn(UnstableApi::class)
+    private val trackSelector: androidx.media3.exoplayer.trackselection.DefaultTrackSelector by lazy {
+        val context = getApplication<Application>()
+        // Respect the system's caption preference (GH #11). If the user has
+        // CaptioningManager enabled, pre-select an English subtitle track so
+        // they don't have to dig into the CC button on every video.
+        val selector = androidx.media3.exoplayer.trackselection.DefaultTrackSelector(context)
+        val captioning = context.getSystemService(android.content.Context.CAPTIONING_SERVICE) as? android.view.accessibility.CaptioningManager
+        if (captioning?.isEnabled == true) {
+            val locale = captioning.locale?.toLanguageTag() ?: java.util.Locale.getDefault().toLanguageTag()
+            selector.parameters = selector.buildUponParameters()
+                .setPreferredTextLanguage(locale)
+                .build()
+        }
+        selector
+    }
+
+    @androidx.annotation.OptIn(UnstableApi::class)
     val player: ExoPlayer by lazy {
         val context = getApplication<Application>()
         val dataSourceFactory = OkHttpDataSource.Factory(
             FloatplaneApi.okHttpClient
         )
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
-
-        // Respect the system's caption preference (GH #11). If the user has
-        // CaptioningManager enabled, pre-select an English subtitle track so
-        // they don't have to dig into the CC button on every video.
-        val trackSelector = androidx.media3.exoplayer.trackselection.DefaultTrackSelector(context)
-        val captioning = context.getSystemService(android.content.Context.CAPTIONING_SERVICE) as? android.view.accessibility.CaptioningManager
-        if (captioning?.isEnabled == true) {
-            val locale = captioning.locale?.toLanguageTag() ?: java.util.Locale.getDefault().toLanguageTag()
-            trackSelector.parameters = trackSelector.buildUponParameters()
-                .setPreferredTextLanguage(locale)
-                .build()
-        }
 
         ExoPlayer.Builder(context)
             .setMediaSourceFactory(mediaSourceFactory)
@@ -123,6 +128,31 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
             .apply {
                 playWhenReady = true
             }
+    }
+
+    /// Whether text tracks are currently enabled on the player. Used by
+    /// the Android TV custom controls (the phone player uses Media3's
+    /// built-in CC button which manages this state internally).
+    private val _captionsEnabled = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val captionsEnabled = _captionsEnabled.asStateFlow()
+
+    @androidx.annotation.OptIn(UnstableApi::class)
+    fun toggleCaptions() {
+        val newDisabled = !trackSelector.parameters.disabledTrackTypes.contains(androidx.media3.common.C.TRACK_TYPE_TEXT)
+        trackSelector.setParameters(
+            trackSelector.buildUponParameters()
+                .setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, newDisabled)
+        )
+        _captionsEnabled.value = !newDisabled
+    }
+
+    /// Push the selector's text-track state back into the published flow.
+    /// Call after loading a new video so the UI reflects whatever the
+    /// system caption pref auto-selected.
+    @androidx.annotation.OptIn(UnstableApi::class)
+    fun syncCaptionsEnabledFromTrackSelector() {
+        val disabled = trackSelector.parameters.disabledTrackTypes.contains(androidx.media3.common.C.TRACK_TYPE_TEXT)
+        _captionsEnabled.value = !disabled
     }
 
     override fun onCleared() {
