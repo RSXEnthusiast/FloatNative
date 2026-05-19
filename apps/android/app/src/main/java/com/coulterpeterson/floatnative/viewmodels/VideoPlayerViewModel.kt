@@ -138,12 +138,42 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
     @androidx.annotation.OptIn(UnstableApi::class)
     fun toggleCaptions() {
-        val newDisabled = !trackSelector.parameters.disabledTrackTypes.contains(androidx.media3.common.C.TRACK_TYPE_TEXT)
+        val current = _captionsEnabled.value
+        setCaptionsEnabled(!current)
+    }
+
+    @androidx.annotation.OptIn(UnstableApi::class)
+    private fun setCaptionsEnabled(enabled: Boolean) {
+        // Flipping `disabledTrackTypes` alone isn't enough — ExoPlayer's
+        // DefaultTrackSelector only AUTO-selects a text track when it also
+        // has a preferred language to match against. Without that, the
+        // track is loaded but never rendered, and the SubtitleView stays
+        // empty (the symptom: the button toggles but no captions appear).
+        // Picking the first available text track's language keeps it
+        // language-agnostic so non-English creators work later on.
+        val preferredLanguage = if (enabled) firstAvailableTextLanguage() ?: "en" else null
         trackSelector.setParameters(
             trackSelector.buildUponParameters()
-                .setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, newDisabled)
+                .setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, !enabled)
+                .setPreferredTextLanguage(preferredLanguage)
         )
-        _captionsEnabled.value = !newDisabled
+        _captionsEnabled.value = enabled
+    }
+
+    /// Walk the player's current tracks for the first available text track's
+    /// language tag. Used to pick a sensible preferred-language so the auto-
+    /// selector actually selects something when the user enables captions.
+    @androidx.annotation.OptIn(UnstableApi::class)
+    private fun firstAvailableTextLanguage(): String? {
+        for (group in player.currentTracks.groups) {
+            if (group.type == androidx.media3.common.C.TRACK_TYPE_TEXT) {
+                for (i in 0 until group.length) {
+                    val lang = group.getTrackFormat(i).language
+                    if (!lang.isNullOrBlank()) return lang
+                }
+            }
+        }
+        return null
     }
 
     /// Push the selector's text-track state back into the published flow.
@@ -152,7 +182,8 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
     @androidx.annotation.OptIn(UnstableApi::class)
     fun syncCaptionsEnabledFromTrackSelector() {
         val disabled = trackSelector.parameters.disabledTrackTypes.contains(androidx.media3.common.C.TRACK_TYPE_TEXT)
-        _captionsEnabled.value = !disabled
+        val hasPreferred = !trackSelector.parameters.preferredTextLanguages.isNullOrEmpty()
+        _captionsEnabled.value = !disabled && hasPreferred
     }
 
     override fun onCleared() {

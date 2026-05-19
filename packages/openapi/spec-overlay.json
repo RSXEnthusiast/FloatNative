@@ -228,6 +228,17 @@
         }
       }
     },
+    "/api/v3/content/progress": {
+      "_comment": "Upstream types the 200 response as text/plain string \"OK\" (literal, no JSON quotes). Retrofit + Moshi parses the body, finds non-JSON text, and throws JsonEncodingException 'malformed JSON at path $' — every time progress saves. Setting content to null per RFC 7396 strips the response schema so codegen emits Response<Unit>; we never read the body anyway.",
+      "post": {
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": null
+          }
+        }
+      }
+    },
     "/api/v3/comment/reply": {
       "_comment": "Reply-to-comment endpoint, observed in production. POST /api/v3/comment rejects any extra field beyond {blogPost, text} with 400 \"X is not allowed\", confirming replies use a separate path. Brought back from the pre-regen Android codegen (commit d021803).",
       "post": {

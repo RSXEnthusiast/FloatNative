@@ -319,9 +319,9 @@ interface ContentV3Api {
      *  - 0: Unexpected response code
      *
      * @param updateProgressRequest 
-     * @return [kotlin.String]
+     * @return [Unit]
      */
     @POST("api/v3/content/progress")
-    suspend fun updateProgress(@Body updateProgressRequest: UpdateProgressRequest): Response<kotlin.String>
+    suspend fun updateProgress(@Body updateProgressRequest: UpdateProgressRequest): Response<Unit>
 
 }
