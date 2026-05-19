@@ -173,8 +173,11 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
                 if realURL.pathExtension.caseInsensitiveCompare("m3u8") == .orderedSame {
                     try await handleManifestRequest(loadingRequest, realURL: realURL)
                 }
-                // Check if this is a Key
-                else if realURL.absoluteString.contains("key") || realURL.pathExtension == "key" {
+                // Check if this is a Key. Match case-insensitively: Floatplane's
+                // EXT-X-KEY URIs use `/api/video/watchKey?token=…`, which
+                // wouldn't match a literal "key" substring search.
+                else if realURL.absoluteString.range(of: "key", options: .caseInsensitive) != nil
+                    || realURL.pathExtension == "key" {
                      try await handleKeyRequest(loadingRequest, realURL: realURL)
                 }
                 // Fallback (shouldn't happen with our rewrite logic, but handle gracefully)
@@ -278,12 +281,39 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         // no DPoP needed and adding it would actually break the signature.
         let trackURL = pendingTextTracks[index].url
         log.debug("fetching WebVTT from \(trackURL.absoluteString, privacy: .private)")
-        let (data, response) = try await session.data(from: trackURL)
+        let (rawData, response) = try await session.data(from: trackURL)
         if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
             log.error("WebVTT fetch returned \(httpResponse.statusCode)")
             throw URLError(.badServerResponse)
         }
-        respondInMemory(loadingRequest, data: data, contentType: Self.webVTTContentType, label: "synth/track.vtt")
+
+        // Floatplane ships a plain HTML5 WebVTT file. Apple's HLS WebVTT
+        // segment format additionally requires an X-TIMESTAMP-MAP header
+        // mapping the cues' local clock to the variant's MPEG-TS PTS clock,
+        // otherwise AVPlayer fails the stream with FigStreamPlayer -12783
+        // (no time alignment). MPEGTS:0,LOCAL:00:00:00.000 is the right
+        // mapping for Floatplane because their variant chunks start at PTS=0.
+        let injected = injectTimestampMap(into: rawData)
+        respondInMemory(loadingRequest, data: injected, contentType: Self.webVTTContentType, label: "synth/track.vtt")
+    }
+
+    /// Insert an `X-TIMESTAMP-MAP` line into a WebVTT body's header block.
+    /// Idempotent — leaves the body unchanged if the header is already present
+    /// (e.g. some other VTT source already complies with HLS).
+    private func injectTimestampMap(into raw: Data) -> Data {
+        guard let body = String(data: raw, encoding: .utf8) else { return raw }
+        if body.contains("X-TIMESTAMP-MAP") { return raw }
+        // Split off the WEBVTT signature line + any header lines, then the
+        // blank line that ends the header block, then the cue body. We want
+        // X-TIMESTAMP-MAP to sit inside the header block, right after WEBVTT.
+        var lines = body.components(separatedBy: "\n")
+        guard let webvttIdx = lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces).hasPrefix("WEBVTT") }) else {
+            // Malformed VTT — return as-is and let AVPlayer handle the failure.
+            return raw
+        }
+        lines.insert("X-TIMESTAMP-MAP=MPEGTS:0,LOCAL:00:00:00.000", at: webvttIdx + 1)
+        let patched = lines.joined(separator: "\n")
+        return patched.data(using: .utf8) ?? raw
     }
     
     // MARK: - Manifest Handling

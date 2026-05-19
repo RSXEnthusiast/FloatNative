@@ -712,12 +712,16 @@ fun VideoPlayerView(
     val onVisibility = rememberUpdatedState(onControllerVisibilityChange)
     AndroidView(
         factory = { ctx ->
-            PlayerView(ctx).apply {
+            // Inflate from XML so we get surface_type="texture_view" — see
+            // res/layout/phone_player_view.xml for the GH #41 rationale.
+            val view = android.view.LayoutInflater.from(ctx).inflate(
+                com.coulterpeterson.floatnative.R.layout.phone_player_view,
+                null
+            ) as PlayerView
+            view.apply {
                 player = exoPlayer
-                keepScreenOn = true  // prevent sleep while the player is visible (mirror of LivePlayerScreen)
+                keepScreenOn = true
                 resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
-                // Expose the CC toggle in the default control bar so users
-                // can turn auto-captions on/off (GH #11).
                 setShowSubtitleButton(true)
                 layoutParams = FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
