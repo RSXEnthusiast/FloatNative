@@ -10,6 +10,7 @@ import com.coulterpeterson.floatnative.openapi.models.CommentLikeV3PostRequest
 import com.coulterpeterson.floatnative.openapi.models.CommentModel
 import com.coulterpeterson.floatnative.openapi.models.CommentV3PostRequest
 import com.coulterpeterson.floatnative.openapi.models.CommentV3PostResponse
+import com.coulterpeterson.floatnative.openapi.models.CommentV3ReplyRequest
 import com.coulterpeterson.floatnative.openapi.models.ErrorModel
 
 interface CommentV3Api {
@@ -184,5 +185,18 @@ interface CommentV3Api {
      */
     @POST("api/v3/comment")
     suspend fun postComment(@Body commentV3PostRequest: CommentV3PostRequest): Response<CommentV3PostResponse>
+
+    /**
+     * POST api/v3/comment/reply
+     * Reply to a comment
+     * Post a reply to an existing comment. Distinct from the top-level POST /api/v3/comment endpoint, which doesn&#39;t accept a parent-comment reference.
+     * Responses:
+     *  - 200: OK
+     *
+     * @param commentV3ReplyRequest 
+     * @return [CommentModel]
+     */
+    @POST("api/v3/comment/reply")
+    suspend fun postCommentReply(@Body commentV3ReplyRequest: CommentV3ReplyRequest): Response<CommentModel>
 
 }

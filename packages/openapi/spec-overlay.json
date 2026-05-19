@@ -79,15 +79,24 @@
           }
         }
       },
-      "CommentV3PostRequest": {
-        "_comment": "Upstream spec only documents {blogPost, text}. Real Floatplane web client also sends an optional `replying` field carrying the parent CommentModel.id when posting a reply (vs. a top-level comment). The same /api/v3/comment endpoint handles both, distinguished by the presence of `replying`. Documented here so the iOS reply UI (GH #13) can send it.",
+      "CommentV3ReplyRequest": {
+        "_comment": "Reply-to-comment request body, restored after live API testing confirmed POST /api/v3/comment rejects any field other than {blogPost, text}. Real reply path is POST /api/v3/comment/reply with {blogPost, text, replyTo}. This matches the pre-regen codegen the Android app was originally built against (see commit d021803).",
+        "type": "object",
         "properties": {
-          "replying": {
+          "blogPost": {
             "type": "string",
-            "nullable": true,
-            "description": "If posting a reply, the id of the parent CommentModel being replied to. Omit / null for a top-level comment. Not in the upstream spec; observed in production."
+            "description": "The GUID of the blogPost the parent comment is on."
+          },
+          "text": {
+            "type": "string",
+            "description": "The text of the reply being posted."
+          },
+          "replyTo": {
+            "type": "string",
+            "description": "The GUID of the parent CommentModel being replied to."
           }
-        }
+        },
+        "required": ["blogPost", "text", "replyTo"]
       },
       "WatchHistoryEntry": {
         "type": "object",
@@ -202,6 +211,33 @@
                   "type": "array",
                   "items": { "$ref": "#/components/schemas/WatchHistoryEntry" }
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/comment/reply": {
+      "_comment": "Reply-to-comment endpoint, observed in production. POST /api/v3/comment rejects any extra field beyond {blogPost, text} with 400 \"X is not allowed\", confirming replies use a separate path. Brought back from the pre-regen Android codegen (commit d021803).",
+      "post": {
+        "operationId": "postCommentReply",
+        "summary": "Reply to a comment",
+        "description": "Post a reply to an existing comment. Distinct from the top-level POST /api/v3/comment endpoint, which doesn't accept a parent-comment reference.",
+        "tags": ["CommentV3"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CommentV3ReplyRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CommentModel" }
               }
             }
           }

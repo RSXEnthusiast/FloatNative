@@ -820,17 +820,29 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
             replyingToComment = null // Clear reply state
         )
         
-        // Fire and forget API call. Both top-level comments and replies go to
-        // the same /api/v3/comment endpoint; the `replying` field on the
-        // request body is what distinguishes a reply (see spec-overlay.json).
+        // Fire-and-forget API call. Replies go to `/api/v3/comment/reply`
+        // with {blogPost, text, replyTo}; top-level comments go to
+        // `/api/v3/comment` with {blogPost, text}. The top-level endpoint
+        // rejects any extra fields with a Joi "X is not allowed" 400 — that
+        // bit us during GH #13 when we mistakenly tried to bundle replies
+        // under the top-level path.
         viewModelScope.launch {
             try {
-                val request = CommentV3PostRequest(
-                    blogPost = currentState.blogPost.id,
-                    text = text,
-                    replying = replyingTo?.id
-                )
-                FloatplaneApi.commentV3.postComment(request)
+                val parentId = replyingTo?.id
+                if (parentId != null) {
+                    val request = com.coulterpeterson.floatnative.openapi.models.CommentV3ReplyRequest(
+                        blogPost = currentState.blogPost.id,
+                        text = text,
+                        replyTo = parentId,
+                    )
+                    FloatplaneApi.commentV3.postCommentReply(request)
+                } else {
+                    val request = CommentV3PostRequest(
+                        blogPost = currentState.blogPost.id,
+                        text = text,
+                    )
+                    FloatplaneApi.commentV3.postComment(request)
+                }
             } catch (e: Exception) {
                 // Ignore failure as requested
             }

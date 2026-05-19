@@ -22,20 +22,25 @@ import com.squareup.moshi.JsonClass
 /**
  * 
  *
- * @param blogPost The GUID of the blogPost the comment should be posted to.
- * @param text The text of the comment being posted.
+ * @param blogPost The GUID of the blogPost the parent comment is on.
+ * @param text The text of the reply being posted.
+ * @param replyTo The GUID of the parent CommentModel being replied to.
  */
 
 
-data class CommentV3PostRequest (
+data class CommentV3ReplyRequest (
 
-    /* The GUID of the blogPost the comment should be posted to. */
+    /* The GUID of the blogPost the parent comment is on. */
     @Json(name = "blogPost")
     val blogPost: kotlin.String,
 
-    /* The text of the comment being posted. */
+    /* The text of the reply being posted. */
     @Json(name = "text")
-    val text: kotlin.String
+    val text: kotlin.String,
+
+    /* The GUID of the parent CommentModel being replied to. */
+    @Json(name = "replyTo")
+    val replyTo: kotlin.String
 
 ) {
 

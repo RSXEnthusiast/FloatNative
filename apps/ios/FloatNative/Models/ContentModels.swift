@@ -159,17 +159,15 @@ typealias InteractionCounts = CommentV3PostResponseInteractionCounts
 struct PostCommentRequest: Codable {
     let blogPost: String
     let text: String
-    /// Parent CommentModel.id when this is a reply, nil for a top-level
-    /// comment. Both shapes hit the same POST /api/v3/comment endpoint —
-    /// the field's presence is what distinguishes them (see GH #13 and the
-    /// CommentV3PostRequest overlay note in packages/openapi/spec-overlay.json).
-    let replying: String?
+}
 
-    init(blogPost: String, text: String, replying: String? = nil) {
-        self.blogPost = blogPost
-        self.text = text
-        self.replying = replying
-    }
+/// Reply requests hit a different endpoint (`POST /api/v3/comment/reply`)
+/// from top-level comments — the top-level endpoint rejects any extra
+/// fields with a Joi "X is not allowed" 400 (GH #13). See spec-overlay.json.
+struct PostReplyRequest: Codable {
+    let blogPost: String
+    let text: String
+    let replyTo: String
 }
 
 struct CommentInteractionRequest: Codable {

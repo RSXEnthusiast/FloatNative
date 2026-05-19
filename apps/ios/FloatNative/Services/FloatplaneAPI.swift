@@ -1255,16 +1255,28 @@ class FloatplaneAPI: ObservableObject {
     }
 
     /// Post a comment or a reply. Pass `replyingTo` (parent CommentModel.id)
-    /// to post a reply; leave it nil for a top-level comment. The same
-    /// endpoint handles both — distinguished by the `replying` body field.
+    /// to post a reply, in which case the request is routed to the dedicated
+    /// `/api/v3/comment/reply` endpoint. The top-level `/api/v3/comment`
+    /// endpoint rejects any extra fields with a Joi 400 "X is not allowed"
+    /// — see spec-overlay.json's CommentV3ReplyRequest note (GH #13).
     func postComment(blogPostId: String, text: String, replyingTo: String? = nil) async throws -> Comment {
-        let commentRequest = PostCommentRequest(blogPost: blogPostId, text: text, replying: replyingTo)
-        return try await request(
-            endpoint: "/api/v3/comment",
-            method: "POST",
-            body: commentRequest,
-            requiresAuth: true
-        )
+        if let parentId = replyingTo {
+            let req = PostReplyRequest(blogPost: blogPostId, text: text, replyTo: parentId)
+            return try await request(
+                endpoint: "/api/v3/comment/reply",
+                method: "POST",
+                body: req,
+                requiresAuth: true
+            )
+        } else {
+            let req = PostCommentRequest(blogPost: blogPostId, text: text)
+            return try await request(
+                endpoint: "/api/v3/comment",
+                method: "POST",
+                body: req,
+                requiresAuth: true
+            )
+        }
     }
 
     /// Like a comment (returns interaction ID when liking, null when unliking)
