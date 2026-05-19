@@ -330,12 +330,12 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
         #if !os(tvOS)
         // MARK: - Fullscreen transitions
 
-        // Set the in-fullscreen flag *before* SwiftUI sees any layout
-        // change. When the host view's `.onDisappear` fires later (some
-        // iOS versions tear down the SwiftUI tree mid-fullscreen) the
-        // GH #40 teardown logic checks this flag and bails out, preventing
-        // the AVPlayer from being reset out from under the modal — which
-        // was producing the black screen + PlayerRemoteXPC -12860.
+        // Flip the flag ON at willBegin and KEEP it true until the user
+        // actually leaves fullscreen — SwiftUI's `.onDisappear` on the host
+        // VideoPlayerView fires *after* the enter-transition animation
+        // completes (confirmed by logs), so clearing the flag at "enter
+        // complete" was too early and let the GH #40 teardown nuke the
+        // player mid-fullscreen → black screen + PlayerRemoteXPC -12860.
         func playerViewController(
             _ playerViewController: AVPlayerViewController,
             willBeginFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator
@@ -344,12 +344,8 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
             MainActor.assumeIsolated {
                 AVPlayerManager.shared.isInFullScreenTransition = true
             }
-            coordinator.animate(alongsideTransition: nil) { _ in
-                MainActor.assumeIsolated {
-                    AVPlayerManager.shared.isInFullScreenTransition = false
-                    print("🎬 [Fullscreen] enter complete")
-                }
-            }
+            // Intentionally NOT clearing on enter-complete — the flag must
+            // stay true for the whole fullscreen session.
         }
 
         // AVPlayerViewController often pauses the player when leaving
@@ -367,9 +363,6 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
             // when UIKit fires this delegate, but the compiler needs us to
             // tell it explicitly that AVPlayerManager touches are main-isolated.
             let wasPlaying = MainActor.assumeIsolated { AVPlayerManager.shared.isPlaying }
-            MainActor.assumeIsolated {
-                AVPlayerManager.shared.isInFullScreenTransition = true
-            }
 
             coordinator.animate(alongsideTransition: nil) { _ in
                 MainActor.assumeIsolated {

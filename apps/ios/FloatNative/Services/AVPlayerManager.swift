@@ -86,12 +86,15 @@ class AVPlayerManager: NSObject, ObservableObject {
     var playerViewController: AVPlayerViewController?
     var playerViewControllerDelegate: NSObject? // Stores the Coordinator
 
-    /// True while AVPlayerViewController is mid-transition into or out of its
-    /// own native fullscreen presentation. Used by VideoPlayerView.onDisappear
-    /// to skip the singleton-player teardown: during fullscreen the host
-    /// SwiftUI view sometimes fires .onDisappear, but the player is still
-    /// being shown by AVPlayerViewController's modal — resetting it would
-    /// black the screen with a PlayerRemoteXPC -12860 error.
+    /// True the entire time AVPlayerViewController owns the fullscreen
+    /// presentation — flipped on at `willBegin`, off at exit-complete.
+    /// Used by VideoPlayerView.onDisappear to skip the singleton-player
+    /// teardown during landscape rotation: SwiftUI fires .onDisappear on
+    /// the host AFTER the fullscreen animation completes, so a "true only
+    /// during the animation" flag (the original attempt) didn't catch the
+    /// teardown window. Resetting the player while AVPlayerViewController
+    /// is still presenting it produces the PlayerRemoteXPC -12860 black
+    /// screen.
     var isInFullScreenTransition: Bool = false
 
     // MARK: - Current Video Info
