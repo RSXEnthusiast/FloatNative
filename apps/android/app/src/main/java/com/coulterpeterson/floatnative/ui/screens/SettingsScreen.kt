@@ -179,15 +179,83 @@ fun SettingsScreen(
                 )
             }
 
+            // --- Playback Section ---
+            item {
+                Text("Playback", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                val sleepRemaining by com.coulterpeterson.floatnative.utils.SleepTimerRepository.remainingSeconds.collectAsState()
+                var showSleepPicker by remember { mutableStateOf(false) }
+
+                ListItem(
+                    headlineContent = { Text("Sleep Timer") },
+                    supportingContent = {
+                        if (sleepRemaining != null) {
+                            Text(
+                                "Pauses in ${com.coulterpeterson.floatnative.utils.SleepTimerRepository.formatRemaining(sleepRemaining!!)}",
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        } else {
+                            Text("Pause playback automatically after a chosen interval.")
+                        }
+                    },
+                    trailingContent = {
+                        TextButton(onClick = { showSleepPicker = true }) {
+                            Text(if (sleepRemaining != null) "Change" else "Set")
+                        }
+                    },
+                    modifier = Modifier.clickable { showSleepPicker = true }
+                )
+
+                if (showSleepPicker) {
+                    AlertDialog(
+                        onDismissRequest = { showSleepPicker = false },
+                        title = { Text("Sleep Timer") },
+                        text = {
+                            Column {
+                                TextButton(onClick = {
+                                    com.coulterpeterson.floatnative.utils.SleepTimerRepository.cancel()
+                                    showSleepPicker = false
+                                }) { Text("Off") }
+                                com.coulterpeterson.floatnative.utils.SleepTimerRepository.options.forEach { duration ->
+                                    TextButton(onClick = {
+                                        com.coulterpeterson.floatnative.utils.SleepTimerRepository.arm(duration)
+                                        showSleepPicker = false
+                                    }) {
+                                        Text(com.coulterpeterson.floatnative.utils.SleepTimerRepository.formatDuration(duration))
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showSleepPicker = false }) { Text("Cancel") }
+                        },
+                    )
+                }
+            }
+
             // --- Support Section ---
             item {
                 Text("Support", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.height(8.dp))
 
+                val isTv = remember(context) {
+                    context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+                }
                 ListItem(
                     headlineContent = { Text("Donate") },
-                    supportingContent = { Text("Show appreciation via Stripe — opens a QR code") },
-                    modifier = Modifier.clickable { showDonateDialog = true }
+                    supportingContent = {
+                        Text(if (isTv) "Show appreciation via Stripe — opens a QR code" else "Show appreciation via Stripe")
+                    },
+                    modifier = Modifier.clickable {
+                        if (isTv) {
+                            // TV browsers can't navigate to external URLs cleanly,
+                            // so show a QR for the user to scan with their phone.
+                            showDonateDialog = true
+                        } else {
+                            uriHandler.openUri(com.coulterpeterson.floatnative.utils.DonationUrl.STRIPE)
+                        }
+                    }
                 )
                 ListItem(
                     headlineContent = { Text("What's New in This Version") },
