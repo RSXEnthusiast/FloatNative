@@ -174,23 +174,20 @@ struct VideoPlayerView: View {
                 }
             }
 
-            // Check if player view controller still exists and has the same player
-            // If it does, we're likely in a transition (fullscreen, PiP, rotation) and shouldn't reset
-            let controllerExists = playerManager.playerViewController != nil
-            let playerMatches = playerManager.player != nil &&
-                              playerManager.playerViewController?.player === playerManager.player
-
-            // Controller is active if:
-            // 1. We're in a PiP session, OR
-            // 2. Controller exists with our player (even if temporarily not in window during transition)
-            let isControllerActive = playerManager.hasPIPSession ||
-                                    (controllerExists && playerMatches)
-
-            // Only reset player if the controller is truly gone (not just presented modally)
-            // This prevents resetting during PiP and native fullscreen transitions
-            if !isControllerActive {
+            // When AVPlayerViewController enters its own native fullscreen, the
+            // SwiftUI host view stays in the hierarchy and `.onDisappear` does
+            // not fire — so reaching this point means the player view is truly
+            // going away (NavigationStack pop, sheet dismiss, iPad swipe-back).
+            // The only "transition" we want to preserve playback for is PiP,
+            // because the system continues that session and the user can tap
+            // the PiP window to return. Without this teardown, the iPad
+            // swipe-back left the singleton player alive with no UI surface
+            // to bring it back (GH #40).
+            if !playerManager.hasPIPSession {
                 playerManager.pause()
                 playerManager.reset()
+                playerManager.playerViewController = nil
+                playerManager.playerViewControllerDelegate = nil
             }
         }
     }

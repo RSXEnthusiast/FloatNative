@@ -267,7 +267,13 @@ class AVPlayerManager: NSObject, ObservableObject {
     private func loadStream(url: String, startTime: Double = 0, isLive: Bool) async throws {
         // Clean up old player
         cleanupPlayer()
-        
+
+        // Re-activate the audio session in case it was deactivated by a
+        // previous reset() (GH #40). setupAudioSession() only runs once at
+        // init, so without this a video loaded after a reset would play
+        // silent on background routes.
+        try? audioSession.setActive(true)
+
         let asset: AVURLAsset
         
         if isLive {
@@ -765,6 +771,11 @@ class AVPlayerManager: NSObject, ObservableObject {
         playerViewController = nil
         playerViewControllerDelegate = nil
         hasPIPSession = false
+
+        // Release audio focus so we don't keep ducking other apps after the
+        // user has fully left the player. setActive(true) is re-issued from
+        // setupAudioSession() the next time a video loads (GH #40).
+        try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
     }
 
     // Note: deinit cannot call async methods, so cleanup happens via onDisappear in views

@@ -346,6 +346,17 @@ struct VideoPlayerTvosView: View {
                     playerManager.pause()
                     // Reset player to stop any ongoing loading that might auto-play
                     playerManager.reset()
+                    #else
+                    // legacyTabView (iOS 17 path) routes iPad through this
+                    // tvOS-styled view, so the same orphan-audio bug from
+                    // GH #40 applies here. Tear down unless PiP is keeping
+                    // the session alive.
+                    if !playerManager.hasPIPSession {
+                        playerManager.pause()
+                        playerManager.reset()
+                        playerManager.playerViewController = nil
+                        playerManager.playerViewControllerDelegate = nil
+                    }
                     #endif
                 }
             }
