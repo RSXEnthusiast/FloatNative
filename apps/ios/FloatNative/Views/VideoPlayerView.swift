@@ -203,28 +203,9 @@ struct VideoPlayerView: View {
             if post.metadata.hasVideo {
                 // Video post - show player
                 if let player = playerManager.player {
-                    ZStack(alignment: .topTrailing) {
-                        CustomVideoPlayer(player: player, showsPlaybackControls: true)
-                            .frame(maxWidth: .infinity)
-                            .aspectRatio(16/9, contentMode: .fit)
-
-                        #if !os(tvOS)
-                        // Force-landscape button — overrides system rotation
-                        // lock the way YouTube / Floatplane's own apps do.
-                        Button {
-                            playerManager.forceLandscape()
-                        } label: {
-                            Image(systemName: "rectangle.landscape.rotate")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(8)
-                                .background(Color.black.opacity(0.55))
-                                .clipShape(Circle())
-                        }
-                        .padding(8)
-                        .accessibilityLabel("Force landscape")
-                        #endif
-                    }
+                    CustomVideoPlayer(player: player, showsPlaybackControls: true)
+                        .frame(maxWidth: .infinity)
+                        .aspectRatio(16/9, contentMode: .fit)
                 } else {
                     Rectangle()
                         .fill(Color.black)
@@ -1112,6 +1093,24 @@ struct VideoPlayerView: View {
             }
             .disabled(isChangingQuality || playerManager.availableQualities.isEmpty)
             }
+
+            // Force-landscape button — lives here rather than as an overlay
+            // on the player because AVPlayerViewController on iOS doesn't
+            // expose a public API to inject buttons into its chrome, and a
+            // SwiftUI overlay competes with the system volume HUD and the
+            // chrome's own AirPlay / PiP buttons.
+            #if !os(tvOS)
+            if post.metadata.hasVideo {
+                Button {
+                    playerManager.forceLandscape()
+                } label: {
+                    Image(systemName: "rectangle.landscape.rotate")
+                        .font(.title2)
+                        .foregroundColor(Color.adaptiveText)
+                }
+                .accessibilityLabel("Force landscape")
+            }
+            #endif
                 }
             }
         }
