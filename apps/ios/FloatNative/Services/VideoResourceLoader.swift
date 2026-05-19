@@ -33,6 +33,14 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     private var pendingVariantURL: URL?
     private var pendingTextTracks: [TextTrack] = []
     private var pendingDurationSeconds: Int = 0
+    /// Cache of the full WebVTT body per track index. Each AVPlayer subtitle
+    /// segment request reads from this cache; we only hit R2 once per video.
+    private var vttBodyCache: [Int: String] = [:]
+    /// HLS subtitle segment duration. Apple's HLS Authoring Spec recommends
+    /// short subtitle segments aligned with video segments; 6s matches what
+    /// Apple's reference samples use and is well within Floatplane variant
+    /// chunk durations (typically ~10s).
+    private static let subtitleSegmentDuration: Int = 6
 
     override init() {
         let config = URLSessionConfiguration.default
@@ -47,6 +55,9 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         self.pendingVariantURL = variantURL
         self.pendingTextTracks = textTracks
         self.pendingDurationSeconds = max(durationSeconds, 1)
+        // New video → flush the WebVTT cache so we re-fetch instead of serving
+        // the previous video's cues.
+        self.vttBodyCache.removeAll()
     }
 
     /// The synthetic master URL AVPlayerManager passes to AVURLAsset when a
@@ -251,19 +262,37 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
             log.error("synthetic subs request for unknown trackId=\(trackId)")
             throw URLError(.resourceUnavailable)
         }
-        let duration = pendingDurationSeconds
-        let lines: [String] = [
+        let totalDuration = pendingDurationSeconds
+        let segDuration = Self.subtitleSegmentDuration
+        let segmentCount = max(1, Int(ceil(Double(totalDuration) / Double(segDuration))))
+
+        // Apple's HLS parser rejects WebVTT playlists with a single long
+        // segment as invalid (CoreMediaErrorDomain -12881 / "invalid
+        // playlist"). Match Apple's reference: TARGETDURATION = the per-
+        // segment duration, then one #EXTINF per segment with a per-segment
+        // URL the loader can fingerprint via its index.
+        var lines: [String] = [
             "#EXTM3U",
-            "#EXT-X-VERSION:3",
-            "#EXT-X-TARGETDURATION:\(duration)",
+            "#EXT-X-VERSION:6",
+            "#EXT-X-TARGETDURATION:\(segDuration)",
             "#EXT-X-MEDIA-SEQUENCE:0",
             "#EXT-X-PLAYLIST-TYPE:VOD",
-            "#EXTINF:\(duration).0,",
-            "floatnative://__synth__/\(trackId)/track.vtt",
-            "#EXT-X-ENDLIST",
         ]
+        for i in 0..<segmentCount {
+            let isLast = i == segmentCount - 1
+            let actualDur: Double
+            if isLast {
+                let remainder = totalDuration - i * segDuration
+                actualDur = max(0.001, Double(remainder))
+            } else {
+                actualDur = Double(segDuration)
+            }
+            lines.append("#EXTINF:\(String(format: "%.3f", actualDur)),")
+            lines.append("floatnative://__synth__/\(trackId)/seg-\(i).vtt")
+        }
+        lines.append("#EXT-X-ENDLIST")
         let manifest = lines.joined(separator: "\n") + "\n"
-        log.debug("synthetic subs playlist for \(trackId):\n\(manifest, privacy: .public)")
+        log.debug("synthetic subs playlist for \(trackId) (\(segmentCount) segments × \(segDuration)s):\n\(manifest, privacy: .public)")
         guard let data = manifest.data(using: .utf8) else {
             throw URLError(.cannotDecodeContentData)
         }
@@ -271,49 +300,144 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
     }
 
     private func handleSyntheticVTT(_ loadingRequest: AVAssetResourceLoadingRequest, url: URL) async throws {
-        let trackId = url.pathComponents.dropFirst().first ?? ""
-        guard let index = Int(trackId.dropFirst("subs".count)),
+        // Path is either /<trackId>/seg-<N>.vtt (chunked) or /<trackId>/track.vtt (legacy)
+        let comps = Array(url.pathComponents.dropFirst())
+        guard let trackId = comps.first,
+              let index = Int(trackId.dropFirst("subs".count)),
               index < pendingTextTracks.count else {
-            log.error("synthetic vtt request for unknown trackId=\(trackId)")
+            log.error("synthetic vtt request for unknown trackId=\(comps.first ?? "?")")
             throw URLError(.resourceUnavailable)
         }
-        // Floatplane's text-track URLs are R2 pre-signed and unauth'd —
-        // no DPoP needed and adding it would actually break the signature.
-        let trackURL = pendingTextTracks[index].url
-        log.debug("fetching WebVTT from \(trackURL.absoluteString, privacy: .private)")
-        let (rawData, response) = try await session.data(from: trackURL)
-        if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
-            log.error("WebVTT fetch returned \(httpResponse.statusCode)")
-            throw URLError(.badServerResponse)
+        let filePart = comps.last ?? "track.vtt"
+        let segmentIndex: Int
+        if filePart.hasPrefix("seg-"), let dot = filePart.firstIndex(of: ".") {
+            let numStr = filePart[filePart.index(filePart.startIndex, offsetBy: 4)..<dot]
+            segmentIndex = Int(numStr) ?? 0
+        } else {
+            segmentIndex = 0
         }
 
-        // Floatplane ships a plain HTML5 WebVTT file. Apple's HLS WebVTT
-        // segment format additionally requires an X-TIMESTAMP-MAP header
-        // mapping the cues' local clock to the variant's MPEG-TS PTS clock,
-        // otherwise AVPlayer fails the stream with FigStreamPlayer -12783
-        // (no time alignment). MPEGTS:0,LOCAL:00:00:00.000 is the right
-        // mapping for Floatplane because their variant chunks start at PTS=0.
-        let injected = injectTimestampMap(into: rawData)
-        respondInMemory(loadingRequest, data: injected, contentType: Self.webVTTContentType, label: "synth/track.vtt")
+        // Cache the full WebVTT body per track. R2 URLs are 15-min pre-signed;
+        // a 60-min video would otherwise re-fetch on every segment.
+        let body: String
+        if let cached = vttBodyCache[index] {
+            body = cached
+        } else {
+            let trackURL = pendingTextTracks[index].url
+            log.debug("fetching WebVTT from \(trackURL.absoluteString, privacy: .private)")
+            let (raw, response) = try await session.data(from: trackURL)
+            if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
+                log.error("WebVTT fetch returned \(httpResponse.statusCode)")
+                throw URLError(.badServerResponse)
+            }
+            guard let parsed = String(data: raw, encoding: .utf8) else {
+                throw URLError(.cannotDecodeContentData)
+            }
+            vttBodyCache[index] = parsed
+            body = parsed
+        }
+
+        let segment = buildSegmentVTT(
+            from: body,
+            segmentIndex: segmentIndex,
+            segmentDuration: Self.subtitleSegmentDuration
+        )
+        guard let data = segment.data(using: .utf8) else {
+            throw URLError(.cannotDecodeContentData)
+        }
+        respondInMemory(loadingRequest, data: data, contentType: Self.webVTTContentType, label: "synth/seg-\(segmentIndex).vtt")
     }
 
-    /// Insert an `X-TIMESTAMP-MAP` line into a WebVTT body's header block.
-    /// Idempotent — leaves the body unchanged if the header is already present
-    /// (e.g. some other VTT source already complies with HLS).
-    private func injectTimestampMap(into raw: Data) -> Data {
-        guard let body = String(data: raw, encoding: .utf8) else { return raw }
-        if body.contains("X-TIMESTAMP-MAP") { return raw }
-        // Split off the WEBVTT signature line + any header lines, then the
-        // blank line that ends the header block, then the cue body. We want
-        // X-TIMESTAMP-MAP to sit inside the header block, right after WEBVTT.
-        var lines = body.components(separatedBy: "\n")
-        guard let webvttIdx = lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces).hasPrefix("WEBVTT") }) else {
-            // Malformed VTT — return as-is and let AVPlayer handle the failure.
-            return raw
+    // MARK: - WebVTT slicing (GH #11)
+
+    private struct VTTCue {
+        let startSec: Double
+        let endSec: Double
+        let payload: String  // identifier (if any) + settings line + text — everything after the timestamp line
+    }
+
+    /// Slice the source WebVTT into the cues that overlap a given HLS segment
+    /// window and return a fresh WebVTT body with the proper X-TIMESTAMP-MAP
+    /// header for that segment. Cue timestamps are kept in their original
+    /// (absolute) form, which is how Apple's reference subtitle samples are
+    /// structured — X-TIMESTAMP-MAP=MPEGTS:0 anchors LOCAL=0 to PTS=0 so the
+    /// renderer reads cue times as absolute video offsets.
+    private func buildSegmentVTT(from source: String, segmentIndex: Int, segmentDuration: Int) -> String {
+        let segStart = Double(segmentIndex * segmentDuration)
+        let segEnd = segStart + Double(segmentDuration)
+        let cues = parseWebVTTCues(source)
+        let filtered = cues.filter { $0.startSec < segEnd && $0.endSec > segStart }
+
+        var out = "WEBVTT\nX-TIMESTAMP-MAP=MPEGTS:0,LOCAL:00:00:00.000\n\n"
+        for cue in filtered {
+            out += "\(formatVTTTime(cue.startSec)) --> \(formatVTTTime(cue.endSec))\n"
+            out += "\(cue.payload)\n\n"
         }
-        lines.insert("X-TIMESTAMP-MAP=MPEGTS:0,LOCAL:00:00:00.000", at: webvttIdx + 1)
-        let patched = lines.joined(separator: "\n")
-        return patched.data(using: .utf8) ?? raw
+        return out
+    }
+
+    private func parseWebVTTCues(_ content: String) -> [VTTCue] {
+        // Normalize CRLF; WebVTT spec allows either but our splitter is `\n`.
+        let normalized = content.replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+        // Cues are blank-line-separated blocks. The first block is the WEBVTT
+        // header; subsequent blocks may be NOTE, STYLE, REGION, or a cue.
+        let blocks = normalized.components(separatedBy: "\n\n")
+        var cues: [VTTCue] = []
+        for (i, block) in blocks.enumerated() {
+            if i == 0 { continue }  // header block
+            let trimmed = block.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty { continue }
+            if trimmed.hasPrefix("NOTE") || trimmed.hasPrefix("STYLE") || trimmed.hasPrefix("REGION") { continue }
+            let lines = trimmed.components(separatedBy: "\n")
+            // Find the timestamp line (the first line containing "-->")
+            guard let tsIdx = lines.firstIndex(where: { $0.contains("-->") }) else { continue }
+            let tsLine = lines[tsIdx]
+            guard let (startSec, endSec) = parseVTTTimestampLine(tsLine) else { continue }
+            let payloadLines = lines.suffix(from: tsIdx + 1)
+            let payload = payloadLines.joined(separator: "\n")
+            cues.append(VTTCue(startSec: startSec, endSec: endSec, payload: payload))
+        }
+        return cues
+    }
+
+    /// Parse a WebVTT timestamp line of the form
+    /// `HH:MM:SS.mmm --> HH:MM:SS.mmm [settings]` or `MM:SS.mmm --> ...`.
+    /// Returns (start, end) in seconds. Any cue settings are dropped — we
+    /// preserve them by including them in the payload, but for timing purposes
+    /// we only need the two timestamps.
+    private func parseVTTTimestampLine(_ line: String) -> (Double, Double)? {
+        let parts = line.components(separatedBy: "-->")
+        guard parts.count >= 2 else { return nil }
+        let leftStr = parts[0].trimmingCharacters(in: .whitespaces)
+        let rightStr = parts[1].trimmingCharacters(in: .whitespaces).components(separatedBy: " ").first ?? ""
+        guard let start = parseVTTTimestamp(leftStr), let end = parseVTTTimestamp(rightStr) else { return nil }
+        return (start, end)
+    }
+
+    private func parseVTTTimestamp(_ str: String) -> Double? {
+        // HH:MM:SS.mmm OR MM:SS.mmm
+        let dotParts = str.components(separatedBy: ".")
+        guard dotParts.count == 2, let ms = Double(dotParts[1]) else { return nil }
+        let colonParts = dotParts[0].components(separatedBy: ":")
+        guard !colonParts.isEmpty else { return nil }
+        let nums = colonParts.compactMap { Double($0) }
+        guard nums.count == colonParts.count else { return nil }
+        // [HH], MM, SS pattern: walk right-to-left.
+        var total: Double = 0
+        if nums.count == 3 { total = nums[0] * 3600 + nums[1] * 60 + nums[2] }
+        else if nums.count == 2 { total = nums[0] * 60 + nums[1] }
+        else if nums.count == 1 { total = nums[0] }
+        return total + ms / 1000.0
+    }
+
+    private func formatVTTTime(_ seconds: Double) -> String {
+        let totalMs = max(0, Int((seconds * 1000).rounded()))
+        let h = totalMs / 3_600_000
+        let m = (totalMs % 3_600_000) / 60_000
+        let s = (totalMs % 60_000) / 1000
+        let ms = totalMs % 1000
+        return String(format: "%02d:%02d:%02d.%03d", h, m, s, ms)
     }
     
     // MARK: - Manifest Handling

@@ -315,20 +315,12 @@ class AVPlayerManager: NSObject, ObservableObject {
                 throw FloatplaneAPIError.invalidURL
             }
 
-            // GH #11: route iOS through a synthetic HLS master when the video
-            // has caption tracks. AVPlayer on tvOS appears to stall after the
-            // master + variant + subs + key + .vtt all serve correctly (no
-            // errorLog, no chunk fetch) — likely a tvOS-specific issue with
-            // our synthetic master that the iOS path doesn't hit. Keep tvOS
-            // on the regular variant URL for now so playback works there;
-            // tvOS captions remain a follow-up.
+            // GH #11: route through a synthetic HLS master when the video has
+            // caption tracks. The master + per-track subs playlist + sliced
+            // .vtt segments are all served in-memory by VideoResourceLoader;
+            // only the upstream .vtt body itself hits the network.
             let streamURL: URL
-            #if os(tvOS)
-            let useSyntheticMaster = false
-            #else
-            let useSyntheticMaster = !textTracks.isEmpty
-            #endif
-            if useSyntheticMaster {
+            if !textTracks.isEmpty {
                 resourceLoader.registerCaptions(
                     variantURL: upstreamVariantURL,
                     textTracks: textTracks,
