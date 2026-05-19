@@ -113,6 +113,15 @@ fun TvVideoPlayerScreen(
         }
     }
 
+    // Sleep timer — pause this player when the timer expires.
+    DisposableEffect(exoPlayer) {
+        val listener: () -> Unit = { exoPlayer.pause() }
+        com.coulterpeterson.floatnative.utils.SleepTimerRepository.setOnExpireListener(listener)
+        onDispose {
+            com.coulterpeterson.floatnative.utils.SleepTimerRepository.removeOnExpireListener(listener)
+        }
+    }
+
     // Handle App Lifecycle (Backgrounding)
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->

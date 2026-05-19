@@ -156,6 +156,17 @@ fun VideoPlayerScreen(
         }
     }
 
+    // Sleep timer — pause this player when the timer expires. The listener
+    // is registered only while this screen is alive, so timers fire safely
+    // even if multiple player screens exist.
+    DisposableEffect(exoPlayer) {
+        val listener: () -> Unit = { exoPlayer.pause() }
+        com.coulterpeterson.floatnative.utils.SleepTimerRepository.setOnExpireListener(listener)
+        onDispose {
+            com.coulterpeterson.floatnative.utils.SleepTimerRepository.removeOnExpireListener(listener)
+        }
+    }
+
     // Monitor Video Size for PiP Aspect Ratio
     DisposableEffect(exoPlayer) {
         val listener = object : androidx.media3.common.Player.Listener {

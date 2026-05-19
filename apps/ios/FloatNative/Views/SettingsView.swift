@@ -22,6 +22,8 @@ struct SettingsView: View {
     // Donate modal
     @State private var showDonateSheet = false
 
+    @StateObject private var sleepTimer = SleepTimerService.shared
+
     var body: some View {
         ZStack {
             Color.adaptiveBackground
@@ -88,6 +90,52 @@ struct SettingsView: View {
                     }
                     .padding(.bottom, 24)
                     #endif
+
+                    // Playback Section — currently just the sleep timer.
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Playback")
+                            .font(.headline)
+                            .foregroundColor(Color.adaptiveText)
+                            .padding(.horizontal)
+
+                        VStack(spacing: 0) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Sleep Timer")
+                                        .font(.body)
+                                        .foregroundColor(Color.adaptiveText)
+                                    if let remaining = sleepTimer.remainingSeconds {
+                                        Text("Pauses in \(SleepTimerService.formatRemaining(remaining))")
+                                            .font(.caption)
+                                            .foregroundColor(.floatplaneBlue)
+                                    } else {
+                                        Text("Pause playback automatically after a chosen interval")
+                                            .font(.caption)
+                                            .foregroundColor(Color.adaptiveSecondaryText)
+                                    }
+                                }
+                                Spacer()
+                                Menu {
+                                    Button("Off") { sleepTimer.cancel() }
+                                    ForEach(SleepTimerService.options, id: \.self) { duration in
+                                        Button(SleepTimerService.formatDuration(duration)) {
+                                            sleepTimer.arm(duration: duration)
+                                        }
+                                    }
+                                } label: {
+                                    Text(sleepTimer.isActive ? "Change" : "Set")
+                                        .font(.body)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.floatplaneBlue)
+                                }
+                            }
+                            .padding()
+                            .background(Color.adaptiveSecondaryBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding(.bottom, 24)
 
                     // Authentication Section
                     VStack(alignment: .leading, spacing: 16) {
