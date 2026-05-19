@@ -315,15 +315,20 @@ class AVPlayerManager: NSObject, ObservableObject {
                 throw FloatplaneAPIError.invalidURL
             }
 
-            // GH #11: route through a synthetic HLS master when the video has
-            // caption tracks. The first attempt rejected the asset with
-            // -12860/-12785 because the loader wasn't setting
-            // contentInformationRequest.contentType — fixed in
-            // VideoResourceLoader. The master + per-track subs playlist + .vtt
-            // proxy are all served in-memory; only the .vtt body itself is
-            // fetched from R2 (and that URL is already signed, no DPoP).
+            // GH #11: route iOS through a synthetic HLS master when the video
+            // has caption tracks. AVPlayer on tvOS appears to stall after the
+            // master + variant + subs + key + .vtt all serve correctly (no
+            // errorLog, no chunk fetch) — likely a tvOS-specific issue with
+            // our synthetic master that the iOS path doesn't hit. Keep tvOS
+            // on the regular variant URL for now so playback works there;
+            // tvOS captions remain a follow-up.
             let streamURL: URL
-            if !textTracks.isEmpty {
+            #if os(tvOS)
+            let useSyntheticMaster = false
+            #else
+            let useSyntheticMaster = !textTracks.isEmpty
+            #endif
+            if useSyntheticMaster {
                 resourceLoader.registerCaptions(
                     variantURL: upstreamVariantURL,
                     textTracks: textTracks,
@@ -406,20 +411,49 @@ class AVPlayerManager: NSObject, ObservableObject {
         NotificationCenter.default.addObserver(forName: .AVPlayerItemNewErrorLogEntry, object: item, queue: .main) { notification in
             guard let playerItem = notification.object as? AVPlayerItem,
                   let errorLog = playerItem.errorLog()?.events.last else { return }
-            print("🚨 [AVPlayer] Error Log: \(errorLog.errorDomain) \(errorLog.errorStatusCode) - \(errorLog.errorComment ?? "")")
+            print("🚨 [AVPlayer] Error Log: \(errorLog.errorDomain) \(errorLog.errorStatusCode) — \(errorLog.errorComment ?? "(no comment)") @ \(errorLog.uri ?? "?")")
         }
-        
+
         NotificationCenter.default.addObserver(forName: .AVPlayerItemNewAccessLogEntry, object: item, queue: .main) { notification in
             guard let playerItem = notification.object as? AVPlayerItem,
                   let accessLog = playerItem.accessLog()?.events.last else { return }
             print("ℹ️ [AVPlayer] Access Log: URI: \(accessLog.uri ?? "") | Bitrate: \(accessLog.indicatedBitrate)")
         }
-        
+
         NotificationCenter.default.addObserver(forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main) { notification in
             if let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error {
                 print("❌ [AVPlayer] Failed to play to end: \(error.localizedDescription)")
             }
         }
+
+        // Playback-stall notification — fires when AVPlayer ran out of buffered
+        // data. Worth knowing for the GH #11 tvOS stall: if we never see this,
+        // playback never started buffering, which points at HLS-parsing trouble
+        // (vs. network) and the master/variant playlists are the prime suspects.
+        NotificationCenter.default.addObserver(forName: .AVPlayerItemPlaybackStalled, object: item, queue: .main) { _ in
+            print("⏸ [AVPlayer] Playback stalled")
+        }
+
+        // Track status transitions: .unknown → .readyToPlay / .failed. A .failed
+        // status without a corresponding errorLog entry is rare but means the
+        // item itself rejected the asset (e.g. malformed master playlist).
+        item.publisher(for: \.status)
+            .sink { status in
+                let label: String = switch status {
+                case .unknown: "unknown"
+                case .readyToPlay: "readyToPlay"
+                case .failed: "failed"
+                @unknown default: "@unknown"
+                }
+                print("🎞 [AVPlayer] PlayerItem.status → \(label)")
+                if status == .failed, let err = item.error as NSError? {
+                    print("   error domain=\(err.domain) code=\(err.code) desc=\(err.localizedDescription)")
+                    if let underlying = err.userInfo[NSUnderlyingErrorKey] as? NSError {
+                        print("   underlying domain=\(underlying.domain) code=\(underlying.code) desc=\(underlying.localizedDescription)")
+                    }
+                }
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Change Quality
