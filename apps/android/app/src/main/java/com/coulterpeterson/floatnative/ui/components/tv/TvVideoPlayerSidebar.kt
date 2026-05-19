@@ -284,7 +284,7 @@ private fun TvPartItem(
             modifier = Modifier.padding(8.dp)
         ) {
             AsyncImage(
-                model = attachment.thumbnail.path,
+                model = attachment.thumbnail.path.toString(),
                 contentDescription = attachment.title,
                 modifier = Modifier
                     .size(width = 120.dp, height = 67.dp)

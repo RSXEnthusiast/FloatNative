@@ -88,7 +88,10 @@ private fun MultiVideoThumbnail(
     ) {
         Box {
             AsyncImage(
-                model = attachment.thumbnail.path,
+                // ImageModel.path is a java.net.URI; Coil treats only the
+                // String form as a remote URL — passing the URI object
+                // silently fails the load (the picker tile showed up blank).
+                model = attachment.thumbnail.path.toString(),
                 contentDescription = attachment.title,
                 modifier = Modifier
                     .size(width = 200.dp, height = 112.dp)
