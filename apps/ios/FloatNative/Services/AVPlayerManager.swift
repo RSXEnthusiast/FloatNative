@@ -315,18 +315,26 @@ class AVPlayerManager: NSObject, ObservableObject {
                 throw FloatplaneAPIError.invalidURL
             }
 
-            // GH #11: the synthetic-master path (textTracks-aware) is staged
-            // but not yet enabled for iOS in v1.8. Early reports showed
-            // AVFoundation rejecting the asset (errSecPlayerRemoteXPC -12860 /
-            // errSecAsync -12785) so we fall back to the original variant URL.
-            // Re-enable once the master + subs playlist passes AVPlayer's
-            // validator; tracked as a follow-up. Android captions are
-            // unaffected (they use Media3's native SubtitleConfiguration).
-            _ = textTracks // silence unused-param warning while the path is off
-            _ = durationSeconds
-            _ = upstreamVariantURL
-            let streamURL: URL = interceptedVariantURL
-            print("📼 [AVPlayerManager] Loading VOD stream with interception: \(streamURL)")
+            // GH #11: route through a synthetic HLS master when the video has
+            // caption tracks. The first attempt rejected the asset with
+            // -12860/-12785 because the loader wasn't setting
+            // contentInformationRequest.contentType — fixed in
+            // VideoResourceLoader. The master + per-track subs playlist + .vtt
+            // proxy are all served in-memory; only the .vtt body itself is
+            // fetched from R2 (and that URL is already signed, no DPoP).
+            let streamURL: URL
+            if !textTracks.isEmpty {
+                resourceLoader.registerCaptions(
+                    variantURL: upstreamVariantURL,
+                    textTracks: textTracks,
+                    durationSeconds: durationSeconds
+                )
+                streamURL = VideoResourceLoader.syntheticMasterURL
+                print("📼 [AVPlayerManager] Loading VOD with synthetic master for \(textTracks.count) caption track(s): \(streamURL)")
+            } else {
+                streamURL = interceptedVariantURL
+                print("📼 [AVPlayerManager] Loading VOD stream with interception: \(streamURL)")
+            }
 
             // Create new player with Interceptor
             // We do NOT pass headers here because the ResourceLoader will handle the request.

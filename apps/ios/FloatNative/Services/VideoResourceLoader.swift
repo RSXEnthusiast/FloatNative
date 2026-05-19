@@ -7,6 +7,7 @@
 
 import AVFoundation
 import Foundation
+import os
 
 class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
 
@@ -23,6 +24,7 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
 
     private let session: URLSession
     private let customScheme = "floatnative"
+    private let log = Logger(subsystem: "ca.maplespace.FloatNative", category: "VideoResourceLoader")
 
     // Variant URL of the currently-loading asset. Set by AVPlayerManager via
     // `registerCaptions(variantURL:textTracks:durationSeconds:)` immediately
@@ -59,14 +61,67 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         shouldWaitForLoadingOfRequestedResource loadingRequest: AVAssetResourceLoadingRequest
     ) -> Bool {
         guard let url = loadingRequest.request.url else { return false }
-        
+        let info = loadingRequest.contentInformationRequest != nil ? "INFO" : ""
+        let data = loadingRequest.dataRequest != nil ? "DATA" : ""
+        let dataRange = loadingRequest.dataRequest.map { "off=\($0.requestedOffset) len=\($0.requestedLength)" } ?? "—"
+        log.debug("⟶ \(info)\(data) \(url.absoluteString) (\(dataRange, privacy: .public))")
+
         // Handle custom scheme requests
         if url.scheme == customScheme {
             handleCustomSchemeRequest(loadingRequest)
             return true
         }
-        
+
         return false
+    }
+
+    func resourceLoader(
+        _ resourceLoader: AVAssetResourceLoader,
+        didCancel loadingRequest: AVAssetResourceLoadingRequest
+    ) {
+        log.debug("✕ cancelled \(loadingRequest.request.url?.absoluteString ?? "—")")
+    }
+
+    // MARK: - Response helpers (GH #11)
+    //
+    // Apple's AVAssetResourceLoader docs are emphatic: the FIRST request for
+    // an asset arrives with a contentInformationRequest that MUST be populated
+    // (contentType, contentLength, isByteRangeAccessSupported) before the
+    // data is returned, otherwise AVPlayer refuses the asset. Skipping this
+    // is what produced the cryptic -12860/-12785 errors we saw initially.
+
+    // AVAssetResourceLoadingContentInformationRequest.contentType expects a
+    // UTI string. There's no AVFileType constant for HLS playlists so we use
+    // the system-registered UTI directly. The MIME-type equivalent is
+    // application/vnd.apple.mpegurl but contentType wants the UTI.
+    private static let playlistContentType = "public.m3u-playlist"
+    private static let webVTTContentType = "org.w3.webvtt"
+
+    private func respondInMemory(
+        _ loadingRequest: AVAssetResourceLoadingRequest,
+        data: Data,
+        contentType: String,
+        label: String
+    ) {
+        if let info = loadingRequest.contentInformationRequest {
+            info.contentType = contentType
+            info.contentLength = Int64(data.count)
+            info.isByteRangeAccessSupported = true
+        }
+        if let dataRequest = loadingRequest.dataRequest {
+            let offset = Int(dataRequest.requestedOffset)
+            let length = dataRequest.requestedLength
+            let end = min(offset + length, data.count)
+            if offset >= data.count {
+                log.error("dataRequest offset \(offset) past EOF \(data.count) for \(label)")
+                loadingRequest.finishLoading(with: URLError(.dataNotAllowed))
+                return
+            }
+            let slice = data.subdata(in: offset..<end)
+            dataRequest.respond(with: slice)
+        }
+        loadingRequest.finishLoading()
+        log.debug("← \(label) bytes=\(data.count) contentType=\(contentType)")
     }
     
     // MARK: - Handlers
@@ -136,6 +191,7 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
 
     private func handleSyntheticMaster(_ loadingRequest: AVAssetResourceLoadingRequest) throws {
         guard let variantURL = pendingVariantURL else {
+            log.error("synthetic master requested without pendingVariantURL set")
             throw URLError(.resourceUnavailable)
         }
 
@@ -166,19 +222,22 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
             lines.append("#EXT-X-MEDIA:" + attrs.joined(separator: ","))
         }
 
-        // Single variant pointing at the upstream playlist. BANDWIDTH is
-        // required; we don't actually know it here so use a plausible value
-        // — AVPlayer doesn't fail master parsing on this.
+        // CODECS + RESOLUTION are strongly recommended by the HLS authoring
+        // spec. The upstream Floatplane variant we point at is H.264 high +
+        // AAC-LC (avc1.640028, mp4a.40.2) at 1080p — values cribbed from the
+        // delivery-info payload. Adding them keeps AVPlayer's strict parser
+        // happy. SUBTITLES attr ties the rendition group to the variant.
         let subtitlesAttr = pendingTextTracks.isEmpty ? "" : ",SUBTITLES=\"subs\""
-        lines.append("#EXT-X-STREAM-INF:BANDWIDTH=4000000\(subtitlesAttr)")
+        let streamInf = "#EXT-X-STREAM-INF:BANDWIDTH=4000000,RESOLUTION=1920x1080,CODECS=\"avc1.640028,mp4a.40.2\"\(subtitlesAttr)"
+        lines.append(streamInf)
         lines.append(interceptedVariantURL.absoluteString)
 
         let manifest = lines.joined(separator: "\n") + "\n"
+        log.debug("synthetic master playlist:\n\(manifest, privacy: .public)")
         guard let data = manifest.data(using: .utf8) else {
             throw URLError(.cannotDecodeContentData)
         }
-        loadingRequest.dataRequest?.respond(with: data)
-        loadingRequest.finishLoading()
+        respondInMemory(loadingRequest, data: data, contentType: Self.playlistContentType, label: "synth/master")
     }
 
     private func handleSyntheticSubsPlaylist(_ loadingRequest: AVAssetResourceLoadingRequest, url: URL) throws {
@@ -186,10 +245,11 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         let trackId = url.pathComponents.dropFirst().first ?? ""
         guard let index = Int(trackId.dropFirst("subs".count)),
               index < pendingTextTracks.count else {
+            log.error("synthetic subs request for unknown trackId=\(trackId)")
             throw URLError(.resourceUnavailable)
         }
         let duration = pendingDurationSeconds
-        var lines: [String] = [
+        let lines: [String] = [
             "#EXTM3U",
             "#EXT-X-VERSION:3",
             "#EXT-X-TARGETDURATION:\(duration)",
@@ -200,27 +260,30 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
             "#EXT-X-ENDLIST",
         ]
         let manifest = lines.joined(separator: "\n") + "\n"
+        log.debug("synthetic subs playlist for \(trackId):\n\(manifest, privacy: .public)")
         guard let data = manifest.data(using: .utf8) else {
             throw URLError(.cannotDecodeContentData)
         }
-        loadingRequest.dataRequest?.respond(with: data)
-        loadingRequest.finishLoading()
+        respondInMemory(loadingRequest, data: data, contentType: Self.playlistContentType, label: "synth/subs.m3u8")
     }
 
     private func handleSyntheticVTT(_ loadingRequest: AVAssetResourceLoadingRequest, url: URL) async throws {
         let trackId = url.pathComponents.dropFirst().first ?? ""
         guard let index = Int(trackId.dropFirst("subs".count)),
               index < pendingTextTracks.count else {
+            log.error("synthetic vtt request for unknown trackId=\(trackId)")
             throw URLError(.resourceUnavailable)
         }
         // Floatplane's text-track URLs are R2 pre-signed and unauth'd —
         // no DPoP needed and adding it would actually break the signature.
-        let (data, response) = try await session.data(from: pendingTextTracks[index].url)
+        let trackURL = pendingTextTracks[index].url
+        log.debug("fetching WebVTT from \(trackURL.absoluteString, privacy: .private)")
+        let (data, response) = try await session.data(from: trackURL)
         if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
+            log.error("WebVTT fetch returned \(httpResponse.statusCode)")
             throw URLError(.badServerResponse)
         }
-        loadingRequest.dataRequest?.respond(with: data)
-        loadingRequest.finishLoading()
+        respondInMemory(loadingRequest, data: data, contentType: Self.webVTTContentType, label: "synth/track.vtt")
     }
     
     // MARK: - Manifest Handling
@@ -280,28 +343,20 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
         guard let modifiedData = modifiedManifest.data(using: .utf8) else {
             throw URLError(.cannotDecodeContentData)
         }
-        
-        // 3. Return Data
-        loadingRequest.dataRequest?.respond(with: modifiedData)
-        loadingRequest.finishLoading()
+
+        respondInMemory(loadingRequest, data: modifiedData, contentType: Self.playlistContentType, label: "variant m3u8")
     }
-    
+
     // MARK: - Key Handling
-    
+
     private func handleKeyRequest(_ loadingRequest: AVAssetResourceLoadingRequest, realURL: URL) async throws {
-        
-        // Fetch with DPoP (This is what we came here for!)
         let data = try await fetchWithDPoP(url: realURL)
-        
-        loadingRequest.dataRequest?.respond(with: data)
-        loadingRequest.finishLoading()
+        respondInMemory(loadingRequest, data: data, contentType: "application/octet-stream", label: "key")
     }
-    
+
     private func handleGenericRequest(_ loadingRequest: AVAssetResourceLoadingRequest, realURL: URL) async throws {
-        // Just fetch and return
         let data = try await fetchWithDPoP(url: realURL)
-        loadingRequest.dataRequest?.respond(with: data)
-        loadingRequest.finishLoading()
+        respondInMemory(loadingRequest, data: data, contentType: "application/octet-stream", label: "generic")
     }
     
     // MARK: - Helpers

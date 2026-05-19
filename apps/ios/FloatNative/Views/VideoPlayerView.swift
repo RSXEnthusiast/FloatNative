@@ -1098,12 +1098,16 @@ struct VideoPlayerView: View {
                 HStack(spacing: 8) {
                     Image(systemName: hasLiked ? "hand.thumbsup.fill" : "hand.thumbsup")
                     Text("\(currentLikes)")
+                        .lineLimit(1)
                 }
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(hasLiked ? .floatplaneBlue : Color.adaptiveText)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
+                // Grow the pill to fit 4-digit counts; without this the
+                // parent HStack squeezed "1234" into two lines.
+                .fixedSize(horizontal: true, vertical: false)
             }
             .liquidGlass(tint: hasLiked ? .floatplaneBlue : .gray, opacity: hasLiked ? 0.8 : 0.6)
 
@@ -1116,12 +1120,14 @@ struct VideoPlayerView: View {
                 HStack(spacing: 8) {
                     Image(systemName: hasDisliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
                     Text("\(currentDislikes)")
+                        .lineLimit(1)
                 }
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(hasDisliked ? .red : Color.adaptiveText)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
+                .fixedSize(horizontal: true, vertical: false)
             }
             .liquidGlass(tint: hasDisliked ? .red : .gray, opacity: hasDisliked ? 0.8 : 0.6)
 

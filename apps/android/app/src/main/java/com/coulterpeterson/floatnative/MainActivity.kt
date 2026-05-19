@@ -56,9 +56,27 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
+        // Sync isInPipMode with the activity's actual state. If Android
+        // RECREATED this activity while already in PiP (suspected when the
+        // launcher icon flashes during PiP entry), the new instance starts
+        // with the default `false` and renders the portrait layout into the
+        // mini-player. Reading isInPictureInPictureMode here corrects that.
+        val activityWasRecreatedIntoPip =
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N && isInPictureInPictureMode
+        if (activityWasRecreatedIntoPip) {
+            isInPipMode = true
+        }
+        android.util.Log.d(
+            "PiPDebug",
+            "onCreate savedInstanceState=${savedInstanceState != null} " +
+                "isInPictureInPictureMode=${if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) isInPictureInPictureMode else "n/a"} " +
+                "→ isInPipMode=$isInPipMode"
+        )
+
         // Removed static enableEdgeToEdge() here to call it dynamically below
-        
+
+
         setContent {
             val context = androidx.compose.ui.platform.LocalContext.current
             
@@ -110,6 +128,10 @@ class MainActivity : AppCompatActivity() {
         super.onUserLeaveHint()
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val ratio = currentVideoRatio
+            android.util.Log.d(
+                "PiPDebug",
+                "onUserLeaveHint isVideoPlaying=$isVideoPlaying currentVideoRatio=${ratio?.let { "${it.numerator}:${it.denominator}" } ?: "null"} pipParamsCached=${pipParams != null}"
+            )
             // Skip PiP entry when we haven't yet resolved the current video's
             // aspect ratio (GH #41). Entering with a stale or hardcoded 16:9
             // produced a broken layout that the user could only fix by
@@ -127,13 +149,41 @@ class MainActivity : AppCompatActivity() {
                 // "video stuck in the top-left of the mini-player" report.
                 // onResume rolls this back if PiP never actually engages.
                 isInPipMode = true
+                android.util.Log.d("PiPDebug", "Pre-flipped isInPipMode=true, calling enterPictureInPictureMode")
                 enterPictureInPictureMode(params)
+            } else {
+                android.util.Log.d("PiPDebug", "Skipping PiP entry")
             }
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        android.util.Log.d("PiPDebug", "onPause inPip=${if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) isInPictureInPictureMode else "n/a"}")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        android.util.Log.d("PiPDebug", "onStop inPip=${if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) isInPictureInPictureMode else "n/a"}")
+    }
+
+    override fun onDestroy() {
+        android.util.Log.d("PiPDebug", "onDestroy isFinishing=$isFinishing isChangingConfigurations=$isChangingConfigurations")
+        super.onDestroy()
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        android.util.Log.d(
+            "PiPDebug",
+            "onConfigurationChanged configW=${newConfig.screenWidthDp}dp configH=${newConfig.screenHeightDp}dp " +
+                "inPip=${if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) isInPictureInPictureMode else "n/a"}"
+        )
+    }
+
     override fun onResume() {
         super.onResume()
+        android.util.Log.d("PiPDebug", "onResume inPip=${if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) isInPictureInPictureMode else "n/a"} isInPipMode=$isInPipMode")
         // Defensive rollback for the pre-flip in onUserLeaveHint — if PiP
         // never actually started (e.g. Android refused entry, or the user
         // returned before the transition completed), we shouldn't be stuck
@@ -147,6 +197,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: android.content.res.Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        android.util.Log.d(
+            "PiPDebug",
+            "onPictureInPictureModeChanged inPip=$isInPictureInPictureMode configW=${newConfig.screenWidthDp}dp configH=${newConfig.screenHeightDp}dp"
+        )
         isInPipMode = isInPictureInPictureMode
     }
     
