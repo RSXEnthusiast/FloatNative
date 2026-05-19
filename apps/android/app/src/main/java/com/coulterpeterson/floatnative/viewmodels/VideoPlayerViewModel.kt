@@ -216,13 +216,17 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
         // progress to the wrong attachment (GH #23).
         val videoId = currentState.selectedVideoId
             ?: currentState.blogPost.videoAttachments?.firstOrNull()?.id ?: return
-        
+
         // Progress in seconds
         val progressSeconds = (player.currentPosition / 1000).toInt()
-        
+
         if (progressSeconds < 5) return // Don't save if just started
 
-        viewModelScope.launch {
+        // Launch on the application-scoped supervisor so the save survives
+        // the user backing out of the player — viewModelScope dies the
+        // moment the ViewModel is cleared, dropping the save with
+        // JobCancellationException.
+        com.coulterpeterson.floatnative.FloatNativeApp.appScope.launch {
             try {
                 FloatplaneApi.contentV3.updateProgress(
                     UpdateProgressRequest(
@@ -232,6 +236,10 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
                     )
                 )
                 android.util.Log.d("VideoPlayerViewModel", "Saved progress: $progressSeconds for $videoId")
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Expected when the app is shutting down; don't pollute the
+                // log with a stack trace for it.
+                throw e
             } catch (e: Exception) {
                 android.util.Log.e("VideoPlayerViewModel", "Failed to save progress", e)
             }

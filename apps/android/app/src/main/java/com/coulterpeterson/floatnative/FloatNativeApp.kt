@@ -8,16 +8,28 @@ import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.util.DebugLogger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class FloatNativeApp : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
-        
+
         // Initialize API Singleton
         FloatplaneApi.init(this)
-        
+
         // CastReceiverContext initialization moved to TvMainActivity to ensure correct options loading
+    }
+
+    companion object {
+        /// Application-lifetime scope for fire-and-forget background work
+        /// that must outlive any single ViewModel — progress saves on
+        /// navigation pop being the canonical case. Launching on the
+        /// ViewModel's scope dropped the save with JobCancellationException
+        /// the moment the user backed out of the player.
+        val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
 
     override fun newImageLoader(): ImageLoader {
