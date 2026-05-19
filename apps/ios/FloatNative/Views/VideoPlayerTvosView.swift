@@ -93,6 +93,34 @@ struct VideoPlayerTvosView: View {
         )
     }
 
+    // Speed menu — the user's pick persists across videos via
+    // AVPlayerManager.persistedPlaybackRate (KVO on player.rate).
+    func createSpeedMenu() -> UIMenu {
+        let currentRate = playerManager.persistedPlaybackRate
+        let children = AVPlayerManager.availablePlaybackRates.map { rate -> UIAction in
+            let title = rate == 1.0 ? "Normal" : "\(formatRate(rate))×"
+            return UIAction(
+                title: title,
+                image: abs(currentRate - rate) < 0.01 ? UIImage(systemName: "checkmark") : nil
+            ) { _ in
+                playerManager.setRate(rate)
+            }
+        }
+        return UIMenu(
+            title: "Speed",
+            image: UIImage(systemName: "speedometer"),
+            children: children
+        )
+    }
+
+    private func formatRate(_ rate: Float) -> String {
+        // 1.25 → "1.25", 2.0 → "2", 0.5 → "0.5"
+        if rate.truncatingRemainder(dividingBy: 1) == 0 {
+            return String(Int(rate))
+        }
+        return String(format: "%g", rate)
+    }
+
     // Helper to create quality menu with actual available qualities
     func createQualityMenu() -> UIMenu {
         guard !playerManager.availableQualities.isEmpty else {
@@ -169,13 +197,15 @@ struct VideoPlayerTvosView: View {
         }
 
         let qualityMenu: UIMenu = createQualityMenu()
+        let speedMenu: UIMenu = createSpeedMenu()
 
         let items: [UIMenuElement] = [
             likeAction,
             dislikeAction,
             descriptionAction,
             commentsAction,
-            qualityMenu
+            qualityMenu,
+            speedMenu
         ]
         return items
     }

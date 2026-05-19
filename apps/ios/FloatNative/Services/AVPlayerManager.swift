@@ -99,6 +99,26 @@ class AVPlayerManager: NSObject, ObservableObject {
 
     private let audioSession = AVAudioSession.sharedInstance()
 
+    // MARK: - Persisted Playback Rate
+
+    /// UserDefaults-backed playback rate that sticks across videos and app
+    /// launches. Mirrors what YouTube / the official Floatplane app do.
+    private static let playbackRateKey = "playbackRate"
+    static let availablePlaybackRates: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+
+    var persistedPlaybackRate: Float {
+        get {
+            let raw = UserDefaults.standard.float(forKey: Self.playbackRateKey)
+            return raw > 0 ? raw : 1.0
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: Self.playbackRateKey)
+            objectWillChange.send()
+        }
+    }
+
+    private var rateObservation: NSKeyValueObservation?
+
     // MARK: - Initialization
 
     private override init() {
@@ -301,7 +321,26 @@ class AVPlayerManager: NSObject, ObservableObject {
         }
 
         self.player = newPlayer
-        
+
+        // Apply the user's preferred playback speed before the first play()
+        // so they don't see a 1.0× flash. defaultRate is iOS/tvOS 16+; our
+        // deployment target is 18+.
+        newPlayer.defaultRate = persistedPlaybackRate
+
+        // Persist any future rate changes the user makes via the
+        // AVPlayerViewController chrome (iOS) or the transport bar menu
+        // (tvOS). Only persist while playing — rate goes to 0 on pause,
+        // we don't want to lose the user's selection. Also push the new
+        // rate into defaultRate so a subsequent pause → play resumes at
+        // the chosen speed instead of snapping back to 1.0×.
+        rateObservation = newPlayer.observe(\.rate, options: [.new]) { [weak self] player, change in
+            guard let newRate = change.newValue, newRate > 0 else { return }
+            self?.persistedPlaybackRate = newRate
+            if abs(player.defaultRate - newRate) > 0.01 {
+                player.defaultRate = newRate
+            }
+        }
+
         // Add observers for detailed logging
         addDebugObservers(to: playerItem)
 
@@ -644,6 +683,10 @@ class AVPlayerManager: NSObject, ObservableObject {
 
         // Stop progress timer
         stopProgressTimer()
+
+        // Stop observing rate changes
+        rateObservation?.invalidate()
+        rateObservation = nil
 
         // Cancel all subscriptions
         cancellables.removeAll()
