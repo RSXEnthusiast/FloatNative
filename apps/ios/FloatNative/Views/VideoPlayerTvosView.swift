@@ -709,9 +709,17 @@ struct VideoPlayerTvosView: View {
                         }
                         .padding(.vertical, 6)
                     }
+                    // tvOS focus requires `.buttonStyle(.card)`; the rest of
+                    // this file uses it consistently (#card halo + lift on
+                    // focus). `.plain` looks fine on iPad's legacy code path
+                    // but is non-focusable in a List on tvOS, which is why
+                    // the parts row couldn't be selected.
+                    #if os(tvOS)
+                    .buttonStyle(.card)
+                    #else
                     .buttonStyle(.plain)
+                    #endif
                     .listRowBackground(Color.clear)
-                    .focusable(true)
                 }
             }
         }
