@@ -169,20 +169,34 @@ fun VideoPlayerScreen(
         }
     }
 
-    // Monitor Video Size for PiP Aspect Ratio
+    // Monitor Video Size for PiP Aspect Ratio. Keep MainActivity.currentVideoRatio
+    // in sync — it gates PiP entry so we don't background with a stale ratio
+    // and produce the broken layout from GH #41.
     DisposableEffect(exoPlayer) {
+        val activity = context as? com.coulterpeterson.floatnative.MainActivity
         val listener = object : androidx.media3.common.Player.Listener {
             override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
                 super.onVideoSizeChanged(videoSize)
                 if (videoSize.width > 0 && videoSize.height > 0) {
                     val ratio = android.util.Rational(videoSize.width, videoSize.height)
-                    (context as? com.coulterpeterson.floatnative.MainActivity)?.updatePipParams(ratio)
+                    activity?.currentVideoRatio = ratio
+                    activity?.updatePipParams(ratio)
                 }
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 super.onIsPlayingChanged(isPlaying)
-                (context as? com.coulterpeterson.floatnative.MainActivity)?.isVideoPlaying = isPlaying
+                activity?.isVideoPlaying = isPlaying
+            }
+
+            override fun onMediaItemTransition(
+                mediaItem: androidx.media3.common.MediaItem?,
+                reason: Int
+            ) {
+                super.onMediaItemTransition(mediaItem, reason)
+                // New video loading — drop the previous ratio so we don't
+                // enter PiP at the old aspect before the new size resolves.
+                activity?.currentVideoRatio = null
             }
         }
         exoPlayer.addListener(listener)
@@ -190,15 +204,19 @@ fun VideoPlayerScreen(
         val format = exoPlayer.videoFormat
         if (format != null && format.width > 0 && format.height > 0) {
              val ratio = android.util.Rational(format.width, format.height)
-             (context as? com.coulterpeterson.floatnative.MainActivity)?.updatePipParams(ratio)
+             activity?.currentVideoRatio = ratio
+             activity?.updatePipParams(ratio)
+        } else {
+             activity?.currentVideoRatio = null
         }
-        
+
         // Initial play state check
-        (context as? com.coulterpeterson.floatnative.MainActivity)?.isVideoPlaying = exoPlayer.isPlaying
-        
+        activity?.isVideoPlaying = exoPlayer.isPlaying
+
         onDispose {
             exoPlayer.removeListener(listener)
-            (context as? com.coulterpeterson.floatnative.MainActivity)?.isVideoPlaying = false
+            activity?.isVideoPlaying = false
+            activity?.currentVideoRatio = null
             viewModel.saveWatchProgress()
         }
     }

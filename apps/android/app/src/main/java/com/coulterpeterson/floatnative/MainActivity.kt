@@ -26,20 +26,30 @@ val LocalPipMode = compositionLocalOf { false }
 
 class MainActivity : AppCompatActivity() {
     private var isInPipMode by mutableStateOf(false)
-    // Default aspect ratio 16:9
     var pipParams: android.app.PictureInPictureParams.Builder? = null
     var isVideoPlaying: Boolean = false
-    
+    /**
+     * Aspect ratio of the *currently loaded* video, set by VideoPlayerScreen's
+     * Player.Listener.onVideoSizeChanged. Null until the player has resolved
+     * the video dimensions, and cleared when the player screen disposes or
+     * loads a different video — so we never carry a stale ratio from the
+     * previous video into a new PiP entry. This is what fixed GH #41: before,
+     * `pipParams` was either stale or unset when the user pressed Home before
+     * ExoPlayer reported the size, and PiP entered at 16:9 with a broken
+     * layout that only a manual resize would un-stick.
+     */
+    var currentVideoRatio: android.util.Rational? = null
+
     fun updatePipParams(aspectRatio: android.util.Rational?) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val ratio = aspectRatio ?: android.util.Rational(16, 9)
-            // Clamp ratio to valid Android limits if necessary (Android handles 2.39:1 to 1:2.39 mostly)
-            // Standard limit is often inclusive.
-            
             val builder = android.app.PictureInPictureParams.Builder()
                 .setAspectRatio(ratio)
-            
             pipParams = builder
+            // setPictureInPictureParams is safe both before and during PiP;
+            // during PiP it live-updates the window's aspect ratio, which is
+            // why the size listener calling this from a running PiP session
+            // typically corrects the layout on its own.
             setPictureInPictureParams(builder.build())
         }
     }
@@ -99,10 +109,15 @@ class MainActivity : AppCompatActivity() {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            if (isVideoPlaying) {
-                // Enter PiP mode if we are playing video
-                val params = pipParams?.build() ?: android.app.PictureInPictureParams.Builder()
-                    .setAspectRatio(android.util.Rational(16, 9))
+            // Skip PiP entry when we haven't yet resolved the current video's
+            // aspect ratio (GH #41). Entering with a stale or hardcoded 16:9
+            // produced a broken layout that the user could only fix by
+            // resizing the PiP window. Better to just background the app
+            // normally and let them come back to the full player.
+            val ratio = currentVideoRatio
+            if (isVideoPlaying && ratio != null) {
+                val params = (pipParams ?: android.app.PictureInPictureParams.Builder()
+                    .setAspectRatio(ratio))
                     .build()
                 enterPictureInPictureMode(params)
             }
