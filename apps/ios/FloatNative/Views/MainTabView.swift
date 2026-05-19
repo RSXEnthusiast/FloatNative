@@ -50,7 +50,7 @@ struct MainTabView: View {
         tabCoordinator.navigateToVideo(post)
     }
 
-    @available(iOS 18, *)
+    @available(iOS 18, tvOS 18, *)
     private var modernTabView: some View {
         TabView(selection: $tabCoordinator.selectedTab) {
             Tab("Home", systemImage: "house.fill", value: 0) {

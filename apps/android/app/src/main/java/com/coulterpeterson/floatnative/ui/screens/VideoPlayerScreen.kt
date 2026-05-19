@@ -50,6 +50,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import android.app.Activity
 import com.coulterpeterson.floatnative.LocalPipMode
+import com.coulterpeterson.floatnative.utils.orderedVideoAttachments
 import coil.compose.AsyncImage
 import androidx.compose.foundation.shape.CircleShape
 
@@ -445,11 +446,26 @@ fun VideoPlayerScreen(
                                 Divider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                             }
                             
+                            // Multi-video picker (GH #23) — only renders for
+                            // posts with more than one video attachment.
+                            val orderedAttachments = currentState.blogPost
+                                .orderedVideoAttachments(currentState.blogPost.attachmentOrder)
+                            if (orderedAttachments.size > 1) {
+                                item {
+                                    com.coulterpeterson.floatnative.ui.components.MultiVideoPicker(
+                                        attachments = orderedAttachments,
+                                        selectedVideoId = currentState.selectedVideoId,
+                                        onSelect = { id -> viewModel.selectVideo(id) },
+                                    )
+                                    Divider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                                }
+                            }
+
                             // Description
                             item {
                                 VideoDescription(
-                                    title = "Description", 
-                                    descriptionHtml = currentState.blogPost.text, 
+                                    title = "Description",
+                                    descriptionHtml = currentState.blogPost.text,
                                     releaseDate = currentState.blogPost.releaseDate,
                                     onSeek = { pos -> viewModel.seekTo(pos) }
                                 )

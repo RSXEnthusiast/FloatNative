@@ -60,6 +60,23 @@ extension BlogPostDetailedWithInteraction {
     var userInteraction: [ContentPostV3Response.UserInteraction]? { post.userInteraction }
 }
 
+extension ContentPostV3Response {
+    /// Video attachments in the author-intended order. The `videoAttachments`
+    /// array on the response is unordered relative to `attachmentOrder`
+    /// (confirmed against the C3GeAE0LmM fixture, GH #23), so feeding the
+    /// raw array into a picker would mis-sequence multi-part posts.
+    var orderedVideoAttachments: [VideoAttachmentModel] {
+        let attachments = videoAttachments ?? []
+        guard !attachmentOrder.isEmpty else { return attachments }
+        let byId = Dictionary(uniqueKeysWithValues: attachments.map { ($0.id, $0) })
+        let ordered = attachmentOrder.compactMap { byId[$0] }
+        // Append anything that wasn't in attachmentOrder so we never silently
+        // drop a video Floatplane sent.
+        let missing = attachments.filter { att in !attachmentOrder.contains(att.id) }
+        return ordered + missing
+    }
+}
+
 // Helper extension for BlogPostChannel compatibility
 extension BlogPostModelV3Channel {
     /// Get the channel object if this is a channel (not just an ID string)

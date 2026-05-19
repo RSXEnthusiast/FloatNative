@@ -56,7 +56,9 @@ import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import com.coulterpeterson.floatnative.openapi.models.CommentModel
 import com.coulterpeterson.floatnative.openapi.models.ContentPostV3Response
+import com.coulterpeterson.floatnative.openapi.models.VideoAttachmentModel
 import com.coulterpeterson.floatnative.ui.components.timeAgo
+import com.coulterpeterson.floatnative.utils.DateUtils
 import com.coulterpeterson.floatnative.viewmodels.PlayerSidebarMode
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ThumbDown
@@ -73,7 +75,12 @@ fun TvVideoPlayerSidebar(
     publishDate: java.time.OffsetDateTime?,
     comments: List<CommentModel>,
     onDismiss: () -> Unit,
-    onSeek: (Long) -> Unit
+    onSeek: (Long) -> Unit,
+    // GH #23 multi-video state. Defaults keep the live-player and any
+    // other caller that doesn't need a parts picker compiling unchanged.
+    videoAttachments: List<VideoAttachmentModel> = emptyList(),
+    selectedVideoId: String? = null,
+    onSelectVideo: (String) -> Unit = {},
 ) {
     if (mode == PlayerSidebarMode.None) return
 
@@ -224,7 +231,78 @@ fun TvVideoPlayerSidebar(
                         }
                     }
                 }
+                PlayerSidebarMode.Parts -> {
+                    TvLazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .focusRequester(focusRequester),
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item {
+                            Text(
+                                text = "Parts (${videoAttachments.size})",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                                color = Color.White
+                            )
+                        }
+                        items(videoAttachments) { attachment ->
+                            TvPartItem(
+                                attachment = attachment,
+                                isSelected = attachment.id == selectedVideoId,
+                                onSelect = { onSelectVideo(attachment.id) }
+                            )
+                        }
+                    }
+                }
                 else -> {}
+            }
+        }
+    }
+}
+
+@androidx.annotation.OptIn(androidx.tv.material3.ExperimentalTvMaterial3Api::class)
+@Composable
+private fun TvPartItem(
+    attachment: VideoAttachmentModel,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+) {
+    Surface(
+        onClick = onSelect,
+        shape = ClickableSurfaceDefaults.shape(shape = MaterialTheme.shapes.small),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = if (isSelected) Color(0xFF2A4D70) else Color.Transparent,
+            focusedContainerColor = Color.White.copy(alpha = 0.12f)
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(8.dp)
+        ) {
+            AsyncImage(
+                model = attachment.thumbnail.path,
+                contentDescription = attachment.title,
+                modifier = Modifier
+                    .size(width = 120.dp, height = 67.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = attachment.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White,
+                    maxLines = 2,
+                )
+                Text(
+                    text = DateUtils.formatDuration(attachment.duration.toLong()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.LightGray
+                )
             }
         }
     }

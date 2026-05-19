@@ -44,7 +44,6 @@ sealed class VideoPlayerState {
         val comments: List<CommentModel> = emptyList(),
         val isLoadingComments: Boolean = false,
         // Quality State
-        // Quality State
         val availableQualities: List<CdnDeliveryV3Variant> = emptyList(),
         val currentQuality: CdnDeliveryV3Variant? = null,
         val group: CdnDeliveryV3Group? = null,
@@ -52,7 +51,11 @@ sealed class VideoPlayerState {
         val replyingToComment: CommentModel? = null,
         // Playlist State
         val userPlaylists: List<com.coulterpeterson.floatnative.api.Playlist> = emptyList(),
-        val showPlaylistSheet: Boolean = false
+        val showPlaylistSheet: Boolean = false,
+        // Multi-video state (GH #23). Defaults to the first id in
+        // attachmentOrder so multi-video posts start on the canonical
+        // primary clip, not whatever order the API returned.
+        val selectedVideoId: String? = null,
     ) : VideoPlayerState()
     data class Error(val message: String) : VideoPlayerState()
 }
@@ -64,7 +67,8 @@ sealed class PlayerAction {
 enum class PlayerSidebarMode {
     None,
     Description,
-    Comments
+    Comments,
+    Parts  // GH #23: multi-video picker for posts with > 1 attachment
 }
 
 class VideoPlayerViewModel(application: Application) : AndroidViewModel(application) {
@@ -128,7 +132,11 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
     fun saveWatchProgress() {
         val currentState = _state.value as? VideoPlayerState.Content ?: return
-        val videoId = currentState.blogPost.videoAttachments?.firstOrNull()?.id ?: return
+        // Save against the *currently-playing* video, not whatever happens
+        // to be at index 0 — otherwise multi-video posts would mis-attribute
+        // progress to the wrong attachment (GH #23).
+        val videoId = currentState.selectedVideoId
+            ?: currentState.blogPost.videoAttachments?.firstOrNull()?.id ?: return
         
         // Progress in seconds
         val progressSeconds = (player.currentPosition / 1000).toInt()
@@ -158,11 +166,15 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             _downloadState.value = true
             try {
-                // 1. Get video ID
-                val videoId = currentState.blogPost.videoAttachments?.firstOrNull()?.id ?: run {
-                     _downloadState.value = false
-                     return@launch
-                }
+                // 1. Download the currently-selected video (GH #23). The
+                //    previous .firstOrNull() always grabbed attachment 0
+                //    even after the user switched parts.
+                val videoId = currentState.selectedVideoId
+                    ?: currentState.blogPost.videoAttachments?.firstOrNull()?.id
+                    ?: run {
+                         _downloadState.value = false
+                         return@launch
+                    }
 
                 // 2. Fetch Download Delivery Info
                 val deliveryResponse = FloatplaneApi.deliveryV3.getDeliveryInfoV3(
@@ -285,9 +297,13 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
                 // Determine initial interaction state causing types to match
                 val initialInteraction = post.userInteraction?.firstOrNull()
 
-                // 2. Get Video ID (first attachment)
-                // 2. Get Video ID (first attachment)
-                val videoId = post.videoAttachments?.firstOrNull()?.id
+                // 2. Pick the canonical primary video (GH #23). attachmentOrder
+                //    is the author-intended sequence; videoAttachments is
+                //    unordered in practice (confirmed against fixture
+                //    get_api_v3_content_post_id_C3GeAE0LmM.json captured 2026-05-19).
+                val attachmentIds = post.videoAttachments?.map { it.id }?.toSet() ?: emptySet()
+                val videoId = post.attachmentOrder.firstOrNull { it in attachmentIds }
+                    ?: post.videoAttachments?.firstOrNull()?.id
                 if (videoId == null) {
                     // Non-video post (Text/Image)
                     _state.value = VideoPlayerState.Content(
@@ -360,7 +376,8 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
                         userInteraction = initialInteraction,
                         availableQualities = variants,
                         currentQuality = variant,
-                        group = group
+                        group = group,
+                        selectedVideoId = videoId,
                     )
                     
                     // Fetch Video Progress (Fire and Forget / Parallel)
@@ -418,8 +435,65 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
             }
         }
     }
-    
 
+    /**
+     * Switch the player to a different video attachment on the same post
+     * (GH #23). Fetches fresh delivery info for the new id and updates state
+     * so the UI re-bundles the MediaItem. No-op if the id is already current
+     * or the state isn't Content.
+     */
+    fun selectVideo(attachmentId: String) {
+        val current = _state.value as? VideoPlayerState.Content ?: return
+        if (current.selectedVideoId == attachmentId) return
+        viewModelScope.launch {
+            try {
+                val deliveryResponse = FloatplaneApi.deliveryV3.getDeliveryInfoV3(
+                    scenario = DeliveryV3Api.ScenarioGetDeliveryInfoV3.onDemand,
+                    entityId = attachmentId,
+                    outputKind = DeliveryV3Api.OutputKindGetDeliveryInfoV3.hlsPeriodFmp4
+                )
+                val body = deliveryResponse.body() ?: return@launch
+                val group = body.groups.firstOrNull() ?: return@launch
+                val variants = (group.variants ?: emptyList()).filter {
+                    !it.label.contains("4K", true) && !it.label.contains("2160p", true)
+                }
+                val variant = variants.find { it.label.contains("1080p", true) } ?: variants.firstOrNull()
+                    ?: return@launch
+                val streamUrl = resolveUrl(variant.url, variant, group)
+
+                val latest = _state.value as? VideoPlayerState.Content ?: return@launch
+                _state.value = latest.copy(
+                    videoUrl = streamUrl,
+                    availableQualities = variants,
+                    currentQuality = variant,
+                    group = group,
+                    selectedVideoId = attachmentId,
+                )
+
+                // Pull saved progress for the newly-selected video so the
+                // user picks up where they left off on that specific part.
+                launch {
+                    try {
+                        val videoContentResponse = FloatplaneApi.contentV3.getVideoContent(attachmentId)
+                        val videoContent = videoContentResponse.body() ?: return@launch
+                        val progressSeconds = videoContent.progress ?: return@launch
+                        if (progressSeconds > 0) {
+                            _playerAction.emit(PlayerAction.Seek(progressSeconds.toLong() * 1000L))
+                        }
+                    } catch (_: Exception) {
+                        // Progress is a nice-to-have; never block the switch on it
+                    }
+                }
+            } catch (_: Exception) {
+                // Best-effort — leave the previous video playing if the new
+                // delivery lookup fails.
+            }
+        }
+    }
+
+    fun openParts() {
+        _sidebarMode.value = PlayerSidebarMode.Parts
+    }
 
     private fun loadComments(postId: String) {
         val currentState = _state.value as? VideoPlayerState.Content ?: return
@@ -988,7 +1062,10 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
                          val currentState = _state.value
                          if (currentState is VideoPlayerState.Content) {
                              val postId = currentState.blogPost.id
-                             val videoId = currentState.blogPost.videoAttachments?.firstOrNull()?.id
+                             // Cast the currently-playing video, not whatever
+                             // happens to be at index 0 (GH #23).
+                             val videoId = currentState.selectedVideoId
+                                 ?: currentState.blogPost.videoAttachments?.firstOrNull()?.id
                              val position = player.currentPosition
                              
                              if (videoId != null) {

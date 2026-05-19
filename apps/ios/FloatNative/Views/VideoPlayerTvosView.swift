@@ -55,9 +55,14 @@ struct VideoPlayerTvosView: View {
     @State private var customTransportBarItems: [UIMenuElement] = []
     #endif
 
+    // Multi-video state (GH #23)
+    @State private var detailedPost: BlogPostDetailedWithInteraction? = nil
+    @State private var selectedAttachmentId: String? = nil
+
     enum SidePanelMode {
         case description
         case comments
+        case parts  // GH #23: list of video attachments on a multi-video post
     }
 
     var hasLiked: Bool {
@@ -199,14 +204,28 @@ struct VideoPlayerTvosView: View {
         let qualityMenu: UIMenu = createQualityMenu()
         let speedMenu: UIMenu = createSpeedMenu()
 
-        let items: [UIMenuElement] = [
+        // Multi-video parts button (GH #23) — only appears when the post
+        // bundles more than one video attachment. Opens the parts sidebar.
+        let partsCount = detailedPost?.post.orderedVideoAttachments.count ?? 0
+        let partsAction: UIAction? = partsCount > 1 ? UIAction(
+            title: "Parts (\(partsCount))",
+            image: UIImage(systemName: "rectangle.stack")
+        ) { _ in
+            self.sidePanelMode = .parts
+            withAnimation {
+                self.showSidePanel = true
+            }
+        } : nil
+
+        var items: [UIMenuElement] = [
             likeAction,
             dislikeAction,
             descriptionAction,
             commentsAction,
-            qualityMenu,
-            speedMenu
         ]
+        if let partsAction { items.append(partsAction) }
+        items.append(qualityMenu)
+        items.append(speedMenu)
         return items
     }
     #endif
@@ -633,6 +652,9 @@ struct VideoPlayerTvosView: View {
                 Picker("", selection: $sidePanelMode) {
                     Text("Description").tag(SidePanelMode.description)
                     Text("Comments").tag(SidePanelMode.comments)
+                    if (detailedPost?.post.orderedVideoAttachments.count ?? 0) > 1 {
+                        Text("Parts").tag(SidePanelMode.parts)
+                    }
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
@@ -641,11 +663,82 @@ struct VideoPlayerTvosView: View {
             // Content - Use List for proper tvOS focus and scrolling
             if isVideoPost && sidePanelMode == .description {
                 descriptionList
+            } else if sidePanelMode == .parts {
+                partsList
             } else {
                 commentsList
             }
         }
         .background(Color.gray.opacity(0.2))
+    }
+
+    // GH #23: tvOS variant of the multi-video picker. Each row is a focusable
+    // ListItem with a thumbnail + title + duration; clicking switches the
+    // player to that attachment.
+    private var partsList: some View {
+        List {
+            Section(header: Text("Parts").font(.headline).foregroundColor(.white)) {
+                ForEach(detailedPost?.post.orderedVideoAttachments ?? [], id: \.id) { attachment in
+                    Button {
+                        switchToAttachment(id: attachment.id)
+                    } label: {
+                        HStack(spacing: 12) {
+                            CachedAsyncImage(url: attachment.thumbnail.fullURL) { image in
+                                image.resizable().aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                Rectangle().fill(Color.gray.opacity(0.3))
+                            }
+                            .frame(width: 160, height: 90)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(attachment.title)
+                                    .font(.body)
+                                    .foregroundColor(.white)
+                                    .lineLimit(2)
+                                Text(formatPartDuration(attachment.duration))
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.7))
+                            }
+                            Spacer()
+                            if attachment.id == selectedAttachmentId {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.floatplaneBlue)
+                            }
+                        }
+                        .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.plain)
+                    .listRowBackground(Color.clear)
+                    .focusable(true)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .padding(.leading, 20)
+        .focused($sidePanelContentFocused)
+    }
+
+    private func formatPartDuration(_ seconds: Double) -> String {
+        let total = Int(seconds)
+        let h = total / 3600
+        let m = (total % 3600) / 60
+        let s = total % 60
+        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
+    }
+
+    private func switchToAttachment(id: String) {
+        guard selectedAttachmentId != id else { return }
+        selectedAttachmentId = id
+        Task {
+            await MainActor.run { playerManager.reset() }
+            await loadVideo()
+            #if os(tvOS)
+            // Rebuild the transport bar so anything that depended on the
+            // currently-selected attachment (parts count, etc.) refreshes.
+            await MainActor.run { customTransportBarItems = buildFullTransportBarItems() }
+            #endif
+        }
     }
 
     // Description as a List for proper tvOS scrolling (same pattern as comments)
@@ -918,7 +1011,9 @@ struct VideoPlayerTvosView: View {
         }
 
 
-        guard let videoId = post.videoAttachments?.first else {
+        // Multi-video posts (GH #23): use the currently-selected attachment
+        // when set, fall back to the first id from the feed model.
+        guard let videoId = selectedAttachmentId ?? post.videoAttachments?.first else {
             errorMessage = "No video available for this post"
             isLoading = false
             return
@@ -1012,12 +1107,22 @@ struct VideoPlayerTvosView: View {
 
     private func loadInteractionState() async {
         do {
-            let detailedPost = try await api.getBlogPost(id: post.id)
+            let fetched = try await api.getBlogPost(id: post.id)
 
-
-            currentLikes = detailedPost.likes
-            currentDislikes = detailedPost.dislikes
-            userInteraction = detailedPost.selfUserInteraction
+            currentLikes = fetched.likes
+            currentDislikes = fetched.dislikes
+            userInteraction = fetched.selfUserInteraction
+            // Store full detail for the multi-video picker (GH #23)
+            detailedPost = fetched
+            if selectedAttachmentId == nil {
+                let ordered = fetched.post.orderedVideoAttachments
+                selectedAttachmentId = ordered.first?.id ?? post.videoAttachments?.first
+            }
+            #if os(tvOS)
+            // Rebuild the transport bar so the parts button shows up for
+            // multi-video posts now that we know the attachment count.
+            customTransportBarItems = buildFullTransportBarItems()
+            #endif
         } catch {
             print("❌ loadInteractionState: Failed - \(error)")
         }

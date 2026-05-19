@@ -40,6 +40,14 @@ struct VideoPlayerView: View {
     /// Reset to nil to drop back to a top-level comment (GH #13).
     @State private var replyingToComment: Comment? = nil
 
+    // Multi-video state (GH #23). `detailedPost` holds the full attachment
+    // objects (thumbnails, durations, textTracks); the feed model only has IDs.
+    @State private var detailedPost: BlogPostDetailedWithInteraction? = nil
+    /// Currently-playing attachment id. Defaults to the first id in
+    /// attachmentOrder so the player starts on the post's primary clip,
+    /// not whatever order the API listed videoAttachments in.
+    @State private var selectedAttachmentId: String? = nil
+
     // Download state
     @State private var isDownloading = false
     @State private var showDownloadToast = false
@@ -319,6 +327,10 @@ struct VideoPlayerView: View {
                     Divider()
                         .background(Color.floatplaneGray.opacity(0.3))
 
+                    // Multi-video picker (GH #23) — only shows when the
+                    // post has more than one video attachment.
+                    multiVideoPicker
+
                     // Description
                     descriptionSection
 
@@ -338,12 +350,20 @@ struct VideoPlayerView: View {
 
     private func loadInteractionState() async {
         do {
-            let detailedPost = try await api.getBlogPost(id: post.id)
+            let fetched = try await api.getBlogPost(id: post.id)
             await MainActor.run {
                 // Update counts with server values
-                currentLikes = detailedPost.likes
-                currentDislikes = detailedPost.dislikes
-                userInteraction = detailedPost.selfUserInteraction
+                currentLikes = fetched.likes
+                currentDislikes = fetched.dislikes
+                userInteraction = fetched.selfUserInteraction
+                // Store full attachment data for the multi-video picker (GH #23).
+                detailedPost = fetched
+                // Seed selection from attachmentOrder so multi-video posts
+                // start on the canonical primary clip.
+                if selectedAttachmentId == nil {
+                    let ordered = fetched.post.orderedVideoAttachments
+                    selectedAttachmentId = ordered.first?.id ?? post.videoAttachments?.first
+                }
             }
         } catch {
             // Silently fail - likes/dislikes are not critical
@@ -370,7 +390,10 @@ struct VideoPlayerView: View {
             return
         }
 
-        guard let videoId = post.videoAttachments?.first else {
+        // Use the currently-selected attachment when set (multi-video posts,
+        // GH #23). Fall back to the first attachment id from the feed model
+        // so a fresh open before loadInteractionState completes still plays.
+        guard let videoId = selectedAttachmentId ?? post.videoAttachments?.first else {
             print("📱 [VideoPlayerView.loadVideo] No video attachment found!")
             errorMessage = "No video available for this post"
             isLoading = false
@@ -1539,6 +1562,98 @@ struct VideoPlayerView: View {
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
         .shadow(color: .black.opacity(0.2), radius: 12, y: -4)
+    }
+
+    // MARK: - Multi-Video Picker
+
+    /// Horizontal thumbnail row for posts that bundle multiple videos
+    /// (e.g. Floatplane's three-clip Setup Doctor post C3GeAE0LmM). Matches
+    /// the layout of the official Floatplane app: tap a thumbnail to switch
+    /// the player to that attachment. Empty view when the post has 0 or 1
+    /// videos so single-video posts pay zero layout cost.
+    @ViewBuilder
+    private var multiVideoPicker: some View {
+        if let attachments = detailedPost?.post.orderedVideoAttachments, attachments.count > 1 {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("\(attachments.count) parts")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(Color.adaptiveText)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(attachments, id: \.id) { attachment in
+                            multiVideoPickerThumbnail(attachment)
+                        }
+                    }
+                    .padding(.bottom, 4)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func multiVideoPickerThumbnail(_ attachment: VideoAttachmentModel) -> some View {
+        let isSelected = attachment.id == selectedAttachmentId
+        Button {
+            switchToAttachment(id: attachment.id)
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                ZStack(alignment: .bottomTrailing) {
+                    CachedAsyncImage(url: attachment.thumbnail.fullURL) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color.floatplaneGray.opacity(0.3))
+                    }
+                    .frame(width: 200, height: 112)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isSelected ? Color.floatplaneBlue : .clear, lineWidth: 3)
+                    )
+
+                    Text(formatAttachmentDuration(attachment.duration))
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.black.opacity(0.8))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .padding(6)
+                }
+
+                Text(attachment.title)
+                    .font(.caption)
+                    .foregroundColor(isSelected ? .floatplaneBlue : Color.adaptiveText)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .frame(width: 200, alignment: .leading)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func formatAttachmentDuration(_ seconds: Double) -> String {
+        let total = Int(seconds)
+        let h = total / 3600
+        let m = (total % 3600) / 60
+        let s = total % 60
+        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
+    }
+
+    private func switchToAttachment(id: String) {
+        guard selectedAttachmentId != id else { return }
+        selectedAttachmentId = id
+        Task {
+            // Reset before loading so AVPlayerManager's "isSameVideo" check
+            // doesn't short-circuit a re-load with a fresh video id.
+            await MainActor.run { playerManager.reset() }
+            await loadVideo()
+        }
     }
 
     // MARK: - Description Section

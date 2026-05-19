@@ -53,6 +53,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
+import com.coulterpeterson.floatnative.utils.orderedVideoAttachments
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @kotlin.OptIn(ExperimentalTvMaterial3Api::class)
@@ -229,6 +230,7 @@ fun TvVideoPlayerScreen(
                                 val btnDislike = playerView.findViewById<android.widget.ImageButton>(com.coulterpeterson.floatnative.R.id.btn_dislike)
                                 val btnDesc = playerView.findViewById<android.widget.ImageButton>(com.coulterpeterson.floatnative.R.id.btn_description)
                                 val btnComments = playerView.findViewById<android.widget.ImageButton>(com.coulterpeterson.floatnative.R.id.btn_comments)
+                                val btnParts = playerView.findViewById<android.widget.ImageButton>(com.coulterpeterson.floatnative.R.id.btn_parts)
                                 val btnSettings = playerView.findViewById<android.widget.ImageButton>(com.coulterpeterson.floatnative.R.id.btn_settings)
     
                                 // Update UI State (Colors)
@@ -251,10 +253,22 @@ fun TvVideoPlayerScreen(
                                 btnDesc?.setOnClickListener { 
                                     viewModel.openDescription()
                                 }
-                                btnComments?.setOnClickListener { 
+                                btnComments?.setOnClickListener {
                                     viewModel.openComments()
                                 }
-                                 btnSettings?.setOnClickListener { 
+
+                                // Parts button (GH #23) — only visible for
+                                // posts with more than one video attachment.
+                                val partsCount = (state as? VideoPlayerState.Content)
+                                    ?.blogPost
+                                    ?.videoAttachments
+                                    ?.size ?: 0
+                                btnParts?.visibility = if (partsCount > 1) android.view.View.VISIBLE else android.view.View.GONE
+                                btnParts?.setOnClickListener {
+                                    viewModel.openParts()
+                                }
+
+                                 btnSettings?.setOnClickListener {
                                     showSettings = true
                                 }
                             },
@@ -396,7 +410,12 @@ fun TvVideoPlayerScreen(
                     publishDate = contentState.blogPost.releaseDate,
                     comments = contentState.comments,
                     onDismiss = { viewModel.closeSidebar() },
-                    onSeek = { viewModel.seekTo(it) }
+                    onSeek = { viewModel.seekTo(it) },
+                    videoAttachments = contentState.blogPost.orderedVideoAttachments(
+                        contentState.blogPost.attachmentOrder
+                    ),
+                    selectedVideoId = contentState.selectedVideoId,
+                    onSelectVideo = { id -> viewModel.selectVideo(id) },
                 )
             }
         }

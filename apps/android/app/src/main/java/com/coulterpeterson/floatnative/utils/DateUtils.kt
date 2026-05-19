@@ -24,6 +24,25 @@ val PostMetadataModel.preferredDisplayDuration: Long
 val PostMetadataModel.additionalPartsSuffix: String
     get() = videoCount?.takeIf { it > 1 }?.let { " +${it - 1}" } ?: ""
 
+/**
+ * Video attachments in the author-intended order (GH #23). The raw
+ * `videoAttachments` array is unordered relative to `attachmentOrder` —
+ * confirmed against fixture get_api_v3_content_post_id_C3GeAE0LmM.json
+ * captured 2026-05-19 — so feeding the raw array into a picker would
+ * mis-sequence multi-part posts. Falls back to insertion order when
+ * attachmentOrder is empty, and appends anything we'd otherwise drop.
+ */
+fun com.coulterpeterson.floatnative.openapi.models.ContentPostV3Response.orderedVideoAttachments(
+    attachmentOrder: List<String>
+): List<com.coulterpeterson.floatnative.openapi.models.VideoAttachmentModel> {
+    val attachments = videoAttachments ?: return emptyList()
+    if (attachmentOrder.isEmpty()) return attachments
+    val byId = attachments.associateBy { it.id }
+    val ordered = attachmentOrder.mapNotNull { byId[it] }
+    val missing = attachments.filter { it.id !in attachmentOrder }
+    return ordered + missing
+}
+
 object DateUtils {
     fun getRelativeTime(isoString: String): String {
         try {
