@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -264,7 +265,19 @@ fun SettingsScreen(
                     }
                 )
                 ListItem(
-                    headlineContent = { Text("Join the Discord to Share Feedback") },
+                    headlineContent = {
+                        Text(
+                            "Send Feedback via Discord",
+                            color = androidx.compose.ui.graphics.Color(0xFF7C4DFF),
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Filled.Forum,
+                            contentDescription = null,
+                            tint = androidx.compose.ui.graphics.Color(0xFF7C4DFF),
+                        )
+                    },
                     modifier = Modifier.clickable {
                         uriHandler.openUri("https://discord.gg/VvgCsKBwpP")
                     }

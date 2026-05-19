@@ -21,6 +21,7 @@ struct SettingsView: View {
 
     // Donate modal
     @State private var showDonateSheet = false
+    @State private var showFeedbackSheet = false
 
     @StateObject private var sleepTimer = SleepTimerService.shared
 
@@ -226,22 +227,40 @@ struct SettingsView: View {
                     }
                     .padding(.bottom, 24)
 
-                    // Send Feedback Button
+                    // Send Feedback Button — iOS opens Discord in the
+                    // browser; tvOS shows a QR modal further down since
+                    // tvOS browsers can't navigate to external URLs.
                     #if !os(tvOS)
-                    Link(destination: URL(string: "mailto:contact@maplespace.ca")!) {
+                    Link(destination: URL(string: "https://discord.gg/VvgCsKBwpP")!) {
                         HStack {
-                            Image(systemName: "envelope.fill")
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
                                 .font(.title3)
 
-                            Text("Send Feedback")
+                            Text("Send Feedback via Discord")
                                 .font(.body)
                                 .fontWeight(.semibold)
                         }
-                        .foregroundColor(.floatplaneBlue)
+                        .foregroundColor(.purple)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                     }
-                    .liquidGlass(tint: .floatplaneBlue, opacity: 0.6)
+                    .liquidGlass(tint: .purple, opacity: 0.6)
+                    .padding(.horizontal)
+                    #else
+                    Button {
+                        showFeedbackSheet = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                                .font(.title3)
+                            Text("Send Feedback via Discord")
+                                .font(.body)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.purple)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                    }
                     .padding(.horizontal)
                     #endif
 
@@ -428,6 +447,9 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showDonateSheet) {
             DonateSheet()
+        }
+        .sheet(isPresented: $showFeedbackSheet) {
+            FeedbackSheet()
         }
     }
 
