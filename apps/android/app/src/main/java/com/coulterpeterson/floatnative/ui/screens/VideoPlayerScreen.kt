@@ -222,7 +222,7 @@ fun VideoPlayerScreen(
     ) {
         if (isInPipMode || isLandscape) {
             // Fullscreen Player (Landscape or PiP)
-            var controlsVisible by remember { mutableStateOf(true) }
+            var controlsVisible by remember { mutableStateOf(false) }
             Box(modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)) {
@@ -255,7 +255,7 @@ fun VideoPlayerScreen(
                 val videoUrl = content?.videoUrl
                 
                 if (videoUrl != null) {
-                    var controlsVisible by remember { mutableStateOf(true) }
+                    var controlsVisible by remember { mutableStateOf(false) }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
