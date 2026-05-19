@@ -105,6 +105,7 @@ fun TvLivePlayerScreen(
                             
                             view.apply {
                                 player = exoPlayer
+                                keepScreenOn = true  // prevent sleep while the player is visible (Android TV / Fire TV)
                                 // Handle D-pad wakeup using KeyListener
                                 setOnKeyListener { _, keyCode, event ->
                                     if (event.action == android.view.KeyEvent.ACTION_DOWN && !isControllerFullyVisible) {

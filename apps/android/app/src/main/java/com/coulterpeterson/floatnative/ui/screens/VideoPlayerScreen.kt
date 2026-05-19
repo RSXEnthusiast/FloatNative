@@ -587,6 +587,7 @@ fun VideoPlayerView(exoPlayer: ExoPlayer) {
         factory = { ctx ->
             PlayerView(ctx).apply {
                 player = exoPlayer
+                keepScreenOn = true  // prevent sleep while the player is visible (mirror of LivePlayerScreen)
                 resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
                 layoutParams = FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,

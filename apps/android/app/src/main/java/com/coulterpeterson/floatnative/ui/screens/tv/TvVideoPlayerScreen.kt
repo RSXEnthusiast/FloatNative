@@ -167,8 +167,9 @@ fun TvVideoPlayerScreen(
                                 
                                 view.apply {
                                     player = exoPlayer
+                                    keepScreenOn = true  // prevent sleep while the player is visible (Android TV / Fire TV)
                                     // XML sets resize_mode="fit", show_buffering="always", etc.
-                                    
+
                                     // Handle D-pad wakeup using KeyListener instead of overriding dispatchKeyEvent
                                     setOnKeyListener { _, keyCode, event ->
                                         if (event.action == android.view.KeyEvent.ACTION_DOWN && !isControllerFullyVisible) {
