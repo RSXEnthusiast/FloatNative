@@ -43,6 +43,10 @@ class MainActivity : AppCompatActivity() {
     fun updatePipParams(aspectRatio: android.util.Rational?) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val ratio = aspectRatio ?: android.util.Rational(16, 9)
+            android.util.Log.d(
+                "PiPDebug",
+                "updatePipParams ratio=${ratio.numerator}:${ratio.denominator} (${ratio.toFloat()}) inPip=$isInPipMode"
+            )
             val builder = android.app.PictureInPictureParams.Builder()
                 .setAspectRatio(ratio)
             pipParams = builder
@@ -109,23 +113,36 @@ class MainActivity : AppCompatActivity() {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val ratio = currentVideoRatio
+            android.util.Log.d(
+                "PiPDebug",
+                "onUserLeaveHint isVideoPlaying=$isVideoPlaying currentVideoRatio=${ratio?.let { "${it.numerator}:${it.denominator}" } ?: "null"} pipParamsCached=${pipParams != null}"
+            )
             // Skip PiP entry when we haven't yet resolved the current video's
             // aspect ratio (GH #41). Entering with a stale or hardcoded 16:9
             // produced a broken layout that the user could only fix by
             // resizing the PiP window. Better to just background the app
             // normally and let them come back to the full player.
-            val ratio = currentVideoRatio
             if (isVideoPlaying && ratio != null) {
                 val params = (pipParams ?: android.app.PictureInPictureParams.Builder()
                     .setAspectRatio(ratio))
                     .build()
+                android.util.Log.d("PiPDebug", "Calling enterPictureInPictureMode")
                 enterPictureInPictureMode(params)
+            } else {
+                android.util.Log.d("PiPDebug", "Skipping PiP entry (no ratio yet or video not playing)")
             }
         }
     }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: android.content.res.Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        android.util.Log.d(
+            "PiPDebug",
+            "onPictureInPictureModeChanged inPip=$isInPictureInPictureMode " +
+                "configW=${newConfig.screenWidthDp}dp configH=${newConfig.screenHeightDp}dp " +
+                "ratio=${newConfig.screenWidthDp.toFloat() / newConfig.screenHeightDp}"
+        )
         isInPipMode = isInPictureInPictureMode
     }
     

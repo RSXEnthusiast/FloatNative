@@ -182,6 +182,11 @@ fun VideoPlayerScreen(
         val listener = object : androidx.media3.common.Player.Listener {
             override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
                 super.onVideoSizeChanged(videoSize)
+                android.util.Log.d(
+                    "PiPDebug",
+                    "onVideoSizeChanged w=${videoSize.width} h=${videoSize.height} " +
+                        "pixelWidthHeightRatio=${videoSize.pixelWidthHeightRatio} unappliedRotationDegrees=${videoSize.unappliedRotationDegrees}"
+                )
                 if (videoSize.width > 0 && videoSize.height > 0) {
                     val ratio = android.util.Rational(videoSize.width, videoSize.height)
                     activity?.currentVideoRatio = ratio
@@ -191,6 +196,7 @@ fun VideoPlayerScreen(
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 super.onIsPlayingChanged(isPlaying)
+                android.util.Log.d("PiPDebug", "onIsPlayingChanged isPlaying=$isPlaying")
                 activity?.isVideoPlaying = isPlaying
             }
 
@@ -199,6 +205,7 @@ fun VideoPlayerScreen(
                 reason: Int
             ) {
                 super.onMediaItemTransition(mediaItem, reason)
+                android.util.Log.d("PiPDebug", "onMediaItemTransition reason=$reason — clearing currentVideoRatio")
                 // New video loading — drop the previous ratio so we don't
                 // enter PiP at the old aspect before the new size resolves.
                 activity?.currentVideoRatio = null
@@ -207,6 +214,10 @@ fun VideoPlayerScreen(
         exoPlayer.addListener(listener)
         // Check initial size
         val format = exoPlayer.videoFormat
+        android.util.Log.d(
+            "PiPDebug",
+            "Listener registered — initial format=${format?.let { "${it.width}x${it.height}" } ?: "null"} isPlaying=${exoPlayer.isPlaying}"
+        )
         if (format != null && format.width > 0 && format.height > 0) {
              val ratio = android.util.Rational(format.width, format.height)
              activity?.currentVideoRatio = ratio
@@ -219,6 +230,7 @@ fun VideoPlayerScreen(
         activity?.isVideoPlaying = exoPlayer.isPlaying
 
         onDispose {
+            android.util.Log.d("PiPDebug", "Listener disposing — clearing isVideoPlaying + currentVideoRatio")
             exoPlayer.removeListener(listener)
             activity?.isVideoPlaying = false
             activity?.currentVideoRatio = null
