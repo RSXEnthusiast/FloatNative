@@ -62,6 +62,10 @@ object DebugLogManager {
         append(Entry(UUID.randomUUID().toString(), Instant.now(), Category.AUTH, message, detail))
     }
 
+    fun other(message: String, detail: String? = null) {
+        append(Entry(UUID.randomUUID().toString(), Instant.now(), Category.OTHER, message, detail))
+    }
+
     fun clear() {
         lock.withLock { storage.clear() }
         _entries.value = emptyList()

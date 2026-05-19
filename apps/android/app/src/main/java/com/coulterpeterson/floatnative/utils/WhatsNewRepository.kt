@@ -53,9 +53,14 @@ object WhatsNewRepository {
         cached?.let { return it }
         val parsed = try {
             val json = context.assets.open(ASSET_PATH).bufferedReader().use { it.readText() }
-            val adapter = Moshi.Builder().build().adapter(Content::class.java)
+            // Use the app's shared Moshi (which registers KotlinJsonAdapterFactory).
+            // A bare `Moshi.Builder().build()` can't reflect on Kotlin data classes
+            // and silently returns null, which is what broke the "What's New"
+            // button on Android.
+            val adapter = buildAppMoshi().adapter(Content::class.java)
             adapter.fromJson(json)
         } catch (e: Exception) {
+            DebugLogManager.other("Failed to parse whats_new.json", e.toString())
             null
         }
         cached = parsed
