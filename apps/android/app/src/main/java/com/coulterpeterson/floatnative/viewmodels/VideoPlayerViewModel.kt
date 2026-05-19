@@ -56,6 +56,11 @@ sealed class VideoPlayerState {
         // attachmentOrder so multi-video posts start on the canonical
         // primary clip, not whatever order the API returned.
         val selectedVideoId: String? = null,
+        // Closed captions for the currently-selected video (GH #11). Loaded
+        // alongside the saved progress in getVideoContent. R2 pre-signed
+        // URLs expire after 15 minutes — fine for a normal session because
+        // ExoPlayer downloads the WebVTT during media prep.
+        val textTracks: List<com.coulterpeterson.floatnative.openapi.models.ContentVideoV3ResponseTextTracksInner> = emptyList(),
     ) : VideoPlayerState()
     data class Error(val message: String) : VideoPlayerState()
 }
@@ -99,8 +104,21 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
         )
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
 
+        // Respect the system's caption preference (GH #11). If the user has
+        // CaptioningManager enabled, pre-select an English subtitle track so
+        // they don't have to dig into the CC button on every video.
+        val trackSelector = androidx.media3.exoplayer.trackselection.DefaultTrackSelector(context)
+        val captioning = context.getSystemService(android.content.Context.CAPTIONING_SERVICE) as? android.view.accessibility.CaptioningManager
+        if (captioning?.isEnabled == true) {
+            val locale = captioning.locale?.toLanguageTag() ?: java.util.Locale.getDefault().toLanguageTag()
+            trackSelector.parameters = trackSelector.buildUponParameters()
+                .setPreferredTextLanguage(locale)
+                .build()
+        }
+
         ExoPlayer.Builder(context)
             .setMediaSourceFactory(mediaSourceFactory)
+            .setTrackSelector(trackSelector)
             .build()
             .apply {
                 playWhenReady = true
@@ -380,16 +398,27 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
                         selectedVideoId = videoId,
                     )
                     
-                    // Fetch Video Progress (Fire and Forget / Parallel)
+                    // Fetch Video Progress + caption tracks. Same endpoint
+                    // surfaces both, so one round-trip covers GH #11 captions
+                    // and resume-on-open.
                     launch {
                         try {
                             val videoContentResponse = FloatplaneApi.contentV3.getVideoContent(videoId)
                             if (videoContentResponse.isSuccessful && videoContentResponse.body() != null) {
                                 val videoContent = videoContentResponse.body()!!
+
+                                // Stash any text tracks on Content state so
+                                // the screen attaches them to the MediaItem.
+                                val tracks = videoContent.textTracks ?: emptyList()
+                                if (tracks.isNotEmpty()) {
+                                    val s = _state.value as? VideoPlayerState.Content
+                                    if (s != null) {
+                                        _state.value = s.copy(textTracks = tracks)
+                                    }
+                                }
+
                                 val progressSeconds = videoContent.progress
                                 if (progressSeconds != null && progressSeconds > 0) {
-                                    // Seek to progress (convert to ms)
-                                    // We use the playerAction flow to ensure it happens on the player
                                     _playerAction.emit(PlayerAction.Seek(progressSeconds.toLong() * 1000L))
                                 }
                             }
@@ -468,14 +497,27 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
                     currentQuality = variant,
                     group = group,
                     selectedVideoId = attachmentId,
+                    // Clear stale tracks from the previous video; the
+                    // launch below repopulates them for the new one.
+                    textTracks = emptyList(),
                 )
 
-                // Pull saved progress for the newly-selected video so the
-                // user picks up where they left off on that specific part.
+                // Pull saved progress + caption tracks for the newly-
+                // selected video so the user picks up where they left off
+                // on that specific part (GH #11, GH #23).
                 launch {
                     try {
                         val videoContentResponse = FloatplaneApi.contentV3.getVideoContent(attachmentId)
                         val videoContent = videoContentResponse.body() ?: return@launch
+
+                        val tracks = videoContent.textTracks ?: emptyList()
+                        if (tracks.isNotEmpty()) {
+                            val s = _state.value as? VideoPlayerState.Content
+                            if (s != null && s.selectedVideoId == attachmentId) {
+                                _state.value = s.copy(textTracks = tracks)
+                            }
+                        }
+
                         val progressSeconds = videoContent.progress ?: return@launch
                         if (progressSeconds > 0) {
                             _playerAction.emit(PlayerAction.Seek(progressSeconds.toLong() * 1000L))

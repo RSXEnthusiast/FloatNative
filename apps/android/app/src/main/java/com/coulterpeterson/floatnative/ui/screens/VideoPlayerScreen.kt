@@ -50,6 +50,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import android.app.Activity
 import com.coulterpeterson.floatnative.LocalPipMode
+import com.coulterpeterson.floatnative.utils.buildMediaItemWithSubtitles
 import com.coulterpeterson.floatnative.utils.orderedVideoAttachments
 import coil.compose.AsyncImage
 import androidx.compose.foundation.shape.CircleShape
@@ -148,7 +149,10 @@ fun VideoPlayerScreen(
             // Ideally check currentMediaItem?.mediaId or similar
             if (contentState.videoUrl != null) {
                 if (exoPlayer.currentMediaItem == null || exoPlayer.currentMediaItem?.localConfiguration?.uri.toString() != contentState.videoUrl) {
-                    val mediaItem = MediaItem.fromUri(contentState.videoUrl)
+                    val mediaItem = buildMediaItemWithSubtitles(
+                        videoUrl = contentState.videoUrl,
+                        textTracks = contentState.textTracks
+                    )
                     exoPlayer.setMediaItem(mediaItem)
                     exoPlayer.prepare()
                 }
@@ -703,6 +707,9 @@ fun VideoPlayerView(
                 player = exoPlayer
                 keepScreenOn = true  // prevent sleep while the player is visible (mirror of LivePlayerScreen)
                 resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
+                // Expose the CC toggle in the default control bar so users
+                // can turn auto-captions on/off (GH #11).
+                setShowSubtitleButton(true)
                 layoutParams = FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT

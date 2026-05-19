@@ -100,7 +100,10 @@ fun TvVideoPlayerScreen(
             val contentState = state as VideoPlayerState.Content
             if (contentState.videoUrl != null) {
                 if (exoPlayer.currentMediaItem == null || exoPlayer.currentMediaItem?.localConfiguration?.uri.toString() != contentState.videoUrl) {
-                    val mediaItem = MediaItem.fromUri(contentState.videoUrl)
+                    val mediaItem = com.coulterpeterson.floatnative.utils.buildMediaItemWithSubtitles(
+                        videoUrl = contentState.videoUrl,
+                        textTracks = contentState.textTracks
+                    )
                     exoPlayer.setMediaItem(mediaItem)
                     exoPlayer.prepare()
                     

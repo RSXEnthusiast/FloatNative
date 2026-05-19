@@ -241,7 +241,12 @@ class AVPlayerManager: NSObject, ObservableObject {
         post: BlogPost? = nil,
         startTime: Double = 0,
         qualities: [QualityVariant],
-        isLive: Bool = false
+        isLive: Bool = false,
+        // Floatplane's text tracks for the currently-loading video (GH #11).
+        // When present, loadStream routes through a synthetic HLS master so
+        // captions show up under the AVPlayer CC button.
+        textTracks: [VideoResourceLoader.TextTrack] = [],
+        durationSeconds: Int = 0
     ) async throws {
         self.currentVideoId = videoId
         self.currentVideoTitle = title
@@ -257,14 +262,26 @@ class AVPlayerManager: NSObject, ObservableObject {
 
         self.currentQuality = quality
 
-        print("🎬 [AVPlayerManager] Loading video: \(title) (Live: \(isLive))")
-        try await loadStream(url: quality.url, startTime: startTime, isLive: isLive)
+        print("🎬 [AVPlayerManager] Loading video: \(title) (Live: \(isLive)) tracks: \(textTracks.count)")
+        try await loadStream(
+            url: quality.url,
+            startTime: startTime,
+            isLive: isLive,
+            textTracks: textTracks,
+            durationSeconds: durationSeconds
+        )
     }
 
     private let resourceLoader = VideoResourceLoader()
     
     /// Load stream from URL
-    private func loadStream(url: String, startTime: Double = 0, isLive: Bool) async throws {
+    private func loadStream(
+        url: String,
+        startTime: Double = 0,
+        isLive: Bool,
+        textTracks: [VideoResourceLoader.TextTrack] = [],
+        durationSeconds: Int = 0
+    ) async throws {
         // Clean up old player
         cleanupPlayer()
 
@@ -293,11 +310,28 @@ class AVPlayerManager: NSObject, ObservableObject {
                 throw FloatplaneAPIError.invalidURL
             }
             components.scheme = "floatnative" // Must match VideoResourceLoader.customScheme
-            
-            guard let streamURL = components.url else {
+
+            guard let upstreamVariantURL = URL(string: url), let interceptedVariantURL = components.url else {
                 throw FloatplaneAPIError.invalidURL
             }
-            print("📼 [AVPlayerManager] Loading VOD stream with interception: \(streamURL)")
+
+            // GH #11: when the post has caption tracks, point AVPlayer at a
+            // synthetic master playlist that references both this variant and
+            // a SUBTITLES rendition per track. The resource loader serves
+            // everything in memory (master + subs playlist + .vtt proxy).
+            let streamURL: URL
+            if !textTracks.isEmpty {
+                resourceLoader.registerCaptions(
+                    variantURL: upstreamVariantURL,
+                    textTracks: textTracks,
+                    durationSeconds: durationSeconds
+                )
+                streamURL = VideoResourceLoader.syntheticMasterURL
+                print("📼 [AVPlayerManager] Loading VOD with synthetic master for captions: \(streamURL)")
+            } else {
+                streamURL = interceptedVariantURL
+                print("📼 [AVPlayerManager] Loading VOD stream with interception: \(streamURL)")
+            }
 
             // Create new player with Interceptor
             // We do NOT pass headers here because the ResourceLoader will handle the request.

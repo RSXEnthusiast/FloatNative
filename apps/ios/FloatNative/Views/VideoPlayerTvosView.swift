@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AVKit
+import MediaAccessibility
 
 // Identifiable wrapper for description paragraphs to ensure stable list rendering
 struct DescriptionParagraph: Identifiable {
@@ -1037,13 +1038,31 @@ struct VideoPlayerTvosView: View {
 
             let qualities = deliveryInfo.availableVariants()
 
+            // Map Floatplane's text tracks for AVPlayer's synthetic master
+            // (GH #11). tvOS uses the system "Closed Captions + SDH" pref
+            // surfaced via MACaptionAppearance, same as iOS.
+            let systemCaptionsOn = MACaptionAppearanceGetDisplayType(.user) != .automatic
+            let captionTracks: [VideoResourceLoader.TextTrack] = (content.textTracks ?? [])
+                .compactMap { track in
+                    guard let src = URL(string: track.src) else { return nil }
+                    let label = track.generated == true ? "Auto-generated" : "English"
+                    return VideoResourceLoader.TextTrack(
+                        url: src,
+                        language: track.language ?? "en",
+                        label: label,
+                        isDefault: systemCaptionsOn
+                    )
+                }
+
             // Load video into player
             try await playerManager.loadVideo(
                 videoId: videoId,
                 title: post.title,
                 post: post,
                 startTime: Double(content.progress ?? 0),
-                qualities: qualities
+                qualities: qualities,
+                textTracks: captionTracks,
+                durationSeconds: Int(content.duration)
             )
 
 
