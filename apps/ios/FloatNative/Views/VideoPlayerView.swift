@@ -36,6 +36,9 @@ struct VideoPlayerView: View {
     @State private var newCommentText = ""
     @State private var isPostingComment = false
     @FocusState private var isCommentFieldFocused: Bool
+    /// When non-nil, the composer is posting a reply to this comment.
+    /// Reset to nil to drop back to a top-level comment (GH #13).
+    @State private var replyingToComment: Comment? = nil
 
     // Download state
     @State private var isDownloading = false
@@ -928,8 +931,9 @@ struct VideoPlayerView: View {
     }
 
     private func postComment() async {
-        // Save text before clearing (needed for rollback)
+        // Save text + reply target before clearing (needed for rollback)
         let commentTextToPost = newCommentText
+        let replyTarget = replyingToComment
 
         guard !commentTextToPost.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return
@@ -951,7 +955,7 @@ struct VideoPlayerView: View {
                     profileImage: ImageModel(width: 0, height: 0, path: "", childImages: nil)
                 ),
                 text: commentTextToPost,
-                replying: nil,  // Top-level comment, not a reply
+                replying: replyTarget?.id,
                 postDate: Date(),
                 editDate: nil,
                 editCount: 0,
@@ -965,30 +969,76 @@ struct VideoPlayerView: View {
                 userInteraction: nil
             )
 
-            comments.insert(optimisticComment, at: 0)
+            if let parentId = replyTarget?.id {
+                comments = insertOptimisticReply(into: comments, parentId: parentId, reply: optimisticComment)
+            } else {
+                comments.insert(optimisticComment, at: 0)
+            }
             newCommentText = ""
             isCommentFieldFocused = false  // Dismiss keyboard after posting
+            replyingToComment = nil  // Drop back to top-level for the next message
         }
 
         do {
-            let realComment = try await api.postComment(blogPostId: post.id, text: commentTextToPost)
+            let realComment = try await api.postComment(
+                blogPostId: post.id,
+                text: commentTextToPost,
+                replyingTo: replyTarget?.id
+            )
 
             await MainActor.run {
-                // Replace optimistic comment with real one
-                if let index = comments.firstIndex(where: { $0.id == optimisticId }) {
-                    comments[index] = realComment
-                }
-
+                // Replace optimistic comment with real one — search through nested replies too
+                comments = replaceComment(in: comments, matching: optimisticId, with: realComment)
                 isPostingComment = false
             }
         } catch {
             await MainActor.run {
-                // Remove optimistic comment on failure
-                comments.removeAll { $0.id == optimisticId }
+                // Remove optimistic comment on failure — also from nested replies
+                comments = removeComment(from: comments, matching: optimisticId)
 
-                errorMessage = "Failed to post comment: \(error.localizedDescription)"
+                errorMessage = "Failed to post \(replyTarget == nil ? "comment" : "reply"): \(error.localizedDescription)"
                 isPostingComment = false
             }
+        }
+    }
+
+    /// Append `reply` to `parentId`'s replies list and bump its totalReplies
+    /// counter. The Floatplane model only nests one level, so this only
+    /// looks at the top level.
+    private func insertOptimisticReply(into list: [Comment], parentId: String, reply: Comment) -> [Comment] {
+        list.map { existing -> Comment in
+            guard existing.id == parentId else { return existing }
+            var copy = existing
+            var newReplies = copy.replies ?? []
+            newReplies.append(reply)
+            copy.replies = newReplies
+            copy.totalReplies = (copy.totalReplies ?? 0) + 1
+            return copy
+        }
+    }
+
+    private func replaceComment(in list: [Comment], matching id: String, with replacement: Comment) -> [Comment] {
+        list.map { existing -> Comment in
+            if existing.id == id { return replacement }
+            if let replies = existing.replies, replies.contains(where: { $0.id == id }) {
+                var copy = existing
+                copy.replies = replies.map { $0.id == id ? replacement : $0 }
+                return copy
+            }
+            return existing
+        }
+    }
+
+    private func removeComment(from list: [Comment], matching id: String) -> [Comment] {
+        list.compactMap { existing -> Comment? in
+            if existing.id == id { return nil }
+            if let replies = existing.replies, replies.contains(where: { $0.id == id }) {
+                var copy = existing
+                copy.replies = replies.filter { $0.id != id }
+                copy.totalReplies = max((copy.totalReplies ?? 1) - 1, 0)
+                return copy
+            }
+            return existing
         }
     }
 
@@ -1237,6 +1287,21 @@ struct VideoPlayerView: View {
                             .foregroundColor(hasDisliked ? .red : Color.adaptiveSecondaryText)
                         }
 
+                        // Reply button — only on top-level comments. The
+                        // Floatplane data model nests just one level deep,
+                        // so replies-of-replies still post against the
+                        // top-level parent (GH #13).
+                        if depth == 0 {
+                            Button {
+                                replyingToComment = comment
+                                isCommentFieldFocused = true
+                            } label: {
+                                Text("Reply")
+                                    .font(.caption)
+                                    .foregroundColor(Color.adaptiveSecondaryText)
+                            }
+                        }
+
                         if let totalReplies = comment.totalReplies, totalReplies > 0 {
                             Text("\(totalReplies) \(totalReplies == 1 ? "reply" : "replies")")
                                 .font(.caption)
@@ -1394,8 +1459,38 @@ struct VideoPlayerView: View {
     // MARK: - Bottom Comment Input
 
     private var bottomCommentInput: some View {
-        HStack(spacing: 12) {
-            TextField("Add a comment...", text: $newCommentText, axis: .vertical)
+        VStack(spacing: 0) {
+            // Active-reply banner: shows who we're replying to with a
+            // tap-to-cancel control. Visible only while replyingToComment
+            // is set (GH #13).
+            if let target = replyingToComment {
+                HStack(spacing: 8) {
+                    Text("Replying to ")
+                        .font(.caption)
+                        .foregroundColor(Color.adaptiveSecondaryText)
+                    + Text("@\(target.user.username)")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(Color.adaptiveText)
+
+                    Spacer()
+
+                    Button {
+                        replyingToComment = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .accessibilityLabel("Cancel reply")
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+
+            HStack(spacing: 12) {
+                TextField(replyingToComment == nil ? "Add a comment..." : "Add a reply...",
+                          text: $newCommentText, axis: .vertical)
                 .textFieldStyle(.plain)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
@@ -1438,6 +1533,7 @@ struct VideoPlayerView: View {
             }
         }
         .frame(minHeight: 48)
+        }  // close outer VStack from the reply-banner wrapper
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .padding(.horizontal, 16)

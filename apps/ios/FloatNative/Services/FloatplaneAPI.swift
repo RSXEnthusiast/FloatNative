@@ -1254,9 +1254,11 @@ class FloatplaneAPI: ObservableObject {
         )
     }
 
-    /// Post a comment
-    func postComment(blogPostId: String, text: String) async throws -> Comment {
-        let commentRequest = PostCommentRequest(blogPost: blogPostId, text: text)
+    /// Post a comment or a reply. Pass `replyingTo` (parent CommentModel.id)
+    /// to post a reply; leave it nil for a top-level comment. The same
+    /// endpoint handles both — distinguished by the `replying` body field.
+    func postComment(blogPostId: String, text: String, replyingTo: String? = nil) async throws -> Comment {
+        let commentRequest = PostCommentRequest(blogPost: blogPostId, text: text, replying: replyingTo)
         return try await request(
             endpoint: "/api/v3/comment",
             method: "POST",
