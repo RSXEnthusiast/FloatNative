@@ -222,17 +222,25 @@ fun VideoPlayerScreen(
     ) {
         if (isInPipMode || isLandscape) {
             // Fullscreen Player (Landscape or PiP)
+            var controlsVisible by remember { mutableStateOf(true) }
             Box(modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)) {
-                VideoPlayerView(exoPlayer)
+                VideoPlayerView(
+                    exoPlayer,
+                    onControllerVisibilityChange = { controlsVisible = it },
+                )
                 if (!isInPipMode) {
-                    ForceLandscapeToggle(
-                        isLandscape = true,
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = controlsVisible,
+                        enter = androidx.compose.animation.fadeIn(),
+                        exit = androidx.compose.animation.fadeOut(),
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(12.dp)
-                    )
+                            .padding(12.dp),
+                    ) {
+                        ForceLandscapeToggle(isLandscape = true)
+                    }
                 }
             }
         } else {
@@ -247,20 +255,28 @@ fun VideoPlayerScreen(
                 val videoUrl = content?.videoUrl
                 
                 if (videoUrl != null) {
+                    var controlsVisible by remember { mutableStateOf(true) }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(16f / 9f)
                             .background(Color.Black)
                     ) {
-                        VideoPlayerView(exoPlayer)
+                        VideoPlayerView(
+                            exoPlayer,
+                            onControllerVisibilityChange = { controlsVisible = it },
+                        )
 
-                        ForceLandscapeToggle(
-                            isLandscape = false,
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = controlsVisible,
+                            enter = androidx.compose.animation.fadeIn(),
+                            exit = androidx.compose.animation.fadeOut(),
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(8.dp)
-                        )
+                                .padding(8.dp),
+                        ) {
+                            ForceLandscapeToggle(isLandscape = false)
+                        }
 
                         // Cast Session Logic
                         // Cast Session Logic
@@ -640,7 +656,13 @@ private fun ForceLandscapeToggle(isLandscape: Boolean, modifier: Modifier = Modi
 
 @OptIn(UnstableApi::class)
 @Composable
-fun VideoPlayerView(exoPlayer: ExoPlayer) {
+fun VideoPlayerView(
+    exoPlayer: ExoPlayer,
+    onControllerVisibilityChange: (Boolean) -> Unit = {},
+) {
+    // Keep the callback fresh across recompositions — the listener inside
+    // the AndroidView factory only captures its closure once at create-time.
+    val onVisibility = rememberUpdatedState(onControllerVisibilityChange)
     AndroidView(
         factory = { ctx ->
             PlayerView(ctx).apply {
@@ -650,6 +672,11 @@ fun VideoPlayerView(exoPlayer: ExoPlayer) {
                 layoutParams = FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                setControllerVisibilityListener(
+                    androidx.media3.ui.PlayerView.ControllerVisibilityListener { visibility ->
+                        onVisibility.value(visibility == android.view.View.VISIBLE)
+                    }
                 )
             }
         },
