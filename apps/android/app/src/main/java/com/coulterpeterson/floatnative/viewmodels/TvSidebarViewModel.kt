@@ -13,6 +13,7 @@ import com.coulterpeterson.floatnative.api.PlaylistAddRequest
 import com.coulterpeterson.floatnative.api.PlaylistRemoveRequest
 import com.coulterpeterson.floatnative.api.PlaylistCreateRequest
 import com.coulterpeterson.floatnative.api.Playlist
+import com.coulterpeterson.floatnative.utils.preferredDisplayDuration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -372,7 +373,10 @@ abstract class TvSidebarViewModel : ViewModel() {
                  _watchProgress.value = _watchProgress.value + (post.id to 1.0f)
                  
                  val videoId = post.videoAttachments?.firstOrNull() ?: return@launch
-                 val durationSeconds = post.metadata.videoDuration.toInt()
+                 // displayDuration matches the primary video we're reporting
+                 // progress for; videoDuration is the sum on multi-video posts
+                 // and would overshoot the real clip's length.
+                 val durationSeconds = post.metadata.preferredDisplayDuration.toInt()
                  
                  FloatplaneApi.contentV3.updateProgress(
                      updateProgressRequest = UpdateProgressRequest(

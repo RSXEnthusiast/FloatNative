@@ -36,7 +36,7 @@ struct VideoFeedCard: View {
 
                     // Duration badge
                     if post.metadata.hasVideo {
-                        Text(formatDuration(post.metadata.videoDuration))
+                        Text(formatDuration(post.metadata.preferredDisplayDuration) + post.metadata.additionalPartsSuffix)
                             .font(.caption2)
                             .fontWeight(.bold)
                             .foregroundStyle(.white)
@@ -155,7 +155,7 @@ struct CompactHistoryCard: View {
                         Spacer()
                         HStack {
                             Spacer()
-                            Text(formatDuration(post.metadata.videoDuration))
+                            Text(formatDuration(post.metadata.preferredDisplayDuration) + post.metadata.additionalPartsSuffix)
                                 .font(.caption2)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.white)

@@ -17,6 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import com.coulterpeterson.floatnative.openapi.models.ContentPostV3Response
 import com.coulterpeterson.floatnative.openapi.models.ImageModel
+import com.coulterpeterson.floatnative.utils.additionalPartsSuffix
+import com.coulterpeterson.floatnative.utils.preferredDisplayDuration
 
 @Composable
 fun PlaylistVideoCard(
@@ -48,7 +50,7 @@ fun PlaylistVideoCard(
                 )
                 
                 // Duration Badge
-                if (post.metadata.videoDuration.toLong() > 0) {
+                if (post.metadata.preferredDisplayDuration > 0) {
                     Surface(
                         color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.8f),
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
@@ -57,7 +59,7 @@ fun PlaylistVideoCard(
                             .padding(6.dp)
                     ) {
                         Text(
-                            text = formatDuration(post.metadata.videoDuration.toLong()),
+                            text = formatDuration(post.metadata.preferredDisplayDuration) + post.metadata.additionalPartsSuffix,
                             style = MaterialTheme.typography.labelSmall,
                             color = androidx.compose.ui.graphics.Color.White,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)

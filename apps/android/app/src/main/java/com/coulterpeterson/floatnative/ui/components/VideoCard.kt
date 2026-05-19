@@ -12,6 +12,8 @@ import coil.compose.AsyncImage
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import com.coulterpeterson.floatnative.openapi.models.BlogPostModelV3
+import com.coulterpeterson.floatnative.utils.additionalPartsSuffix
+import com.coulterpeterson.floatnative.utils.preferredDisplayDuration
 
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -48,7 +50,7 @@ fun VideoCard(
                 )
                 
                 // Duration Badge
-                if (post.metadata.videoDuration.toLong() > 0) {
+                if (post.metadata.preferredDisplayDuration > 0) {
                     Surface(
                         color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.8f),
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
@@ -57,7 +59,7 @@ fun VideoCard(
                             .padding(6.dp)
                     ) {
                         Text(
-                            text = formatDuration(post.metadata.videoDuration.toLong()),
+                            text = formatDuration(post.metadata.preferredDisplayDuration) + post.metadata.additionalPartsSuffix,
                             style = MaterialTheme.typography.labelSmall,
                             color = androidx.compose.ui.graphics.Color.White,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)

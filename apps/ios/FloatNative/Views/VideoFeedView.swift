@@ -1562,7 +1562,7 @@ struct VideoCard: View {
 
                         // Duration badge (only for non-livestream videos)
                         if post.metadata.hasVideo && !isLivestream {
-                            Text(formatDuration(post.metadata.videoDuration))
+                            Text(formatDuration(post.metadata.preferredDisplayDuration) + post.metadata.additionalPartsSuffix)
                                 .font(.caption2)
                                 .fontWeight(.bold)
                                 .foregroundStyle(.white)

@@ -63,7 +63,7 @@ Cloudflare Worker providing companion features for the FloatNative iOS app.
 
 Native iOS application built with SwiftUI.
 
-- **Requirements**: Xcode 16.4+, iOS 18.5+, Swift 5.0
+- **Requirements**: Xcode 16.4+, iOS 17.0+ / tvOS 17.0+, Swift 5.0
 - **Platforms**: iOS, tvOS
 - **API Integration**:
   - Auto-generated models from community FloatplaneAPI specification

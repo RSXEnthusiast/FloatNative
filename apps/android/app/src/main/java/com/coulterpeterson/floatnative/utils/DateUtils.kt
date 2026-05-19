@@ -1,9 +1,28 @@
 package com.coulterpeterson.floatnative.utils
 
 import android.text.format.DateUtils
+import com.coulterpeterson.floatnative.openapi.models.PostMetadataModel
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+
+/**
+ * On a multi-video post (e.g. `C3GeAE0LmM`, videoCount=3) `videoDuration` is
+ * the SUM of every video attachment, which made the card look like a 24-minute
+ * video when the primary clip is actually 22 minutes (GH #29). Floatplane
+ * returns `displayDuration` for that primary clip; prefer it, fall back to
+ * videoDuration on legacy responses that don't carry the new field.
+ */
+val PostMetadataModel.preferredDisplayDuration: Long
+    get() = displayDuration?.toLong() ?: videoDuration.toLong()
+
+/**
+ * Tail label appended to the duration on cards for posts that bundle extra
+ * video parts (GH #23, #29). `videoCount=3` becomes `" +2"`. Empty string
+ * for normal single-video posts.
+ */
+val PostMetadataModel.additionalPartsSuffix: String
+    get() = videoCount?.takeIf { it > 1 }?.let { " +${it - 1}" } ?: ""
 
 object DateUtils {
     fun getRelativeTime(isoString: String): String {

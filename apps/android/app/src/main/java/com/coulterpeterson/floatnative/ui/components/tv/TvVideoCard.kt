@@ -33,6 +33,8 @@ import coil.compose.AsyncImage
 import com.coulterpeterson.floatnative.openapi.models.BlogPostModelV3
 import com.coulterpeterson.floatnative.openapi.models.ImageModel
 import com.coulterpeterson.floatnative.utils.DateUtils
+import com.coulterpeterson.floatnative.utils.additionalPartsSuffix
+import com.coulterpeterson.floatnative.utils.preferredDisplayDuration
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -53,7 +55,8 @@ fun TvVideoCard(
         channelTitle = post.channel.title ?: post.creator.title,
         channelIcon = post.channel.icon,
         creatorIcon = post.creator.icon,
-        duration = post.metadata.videoDuration.toLong(),
+        duration = post.metadata.preferredDisplayDuration,
+        partsSuffix = post.metadata.additionalPartsSuffix,
         releaseDate = post.releaseDate.toString(),
         onClick = onClick,
         onLongClick = onLongClick,
@@ -79,7 +82,8 @@ fun TvVideoCard(
         channelTitle = post.channel.title,
         channelIcon = post.channel.icon,
         creatorIcon = post.creator.icon,
-        duration = post.metadata.videoDuration.toLong(),
+        duration = post.metadata.preferredDisplayDuration,
+        partsSuffix = post.metadata.additionalPartsSuffix,
         releaseDate = post.releaseDate.toString(),
         onClick = onClick,
         onLongClick = onLongClick,
@@ -105,7 +109,8 @@ fun TvVideoCard(
         channelTitle = post.channel.title,
         channelIcon = post.channel.icon,
         creatorIcon = post.creator.icon,
-        duration = post.metadata.videoDuration.toLong(),
+        duration = post.metadata.preferredDisplayDuration,
+        partsSuffix = post.metadata.additionalPartsSuffix,
         releaseDate = post.releaseDate,
         onClick = onClick,
         onLongClick = onLongClick,
@@ -124,6 +129,7 @@ private fun TvVideoCardContent(
     channelIcon: ImageModel?,
     creatorIcon: ImageModel?,
     duration: Long,
+    partsSuffix: String = "",
     releaseDate: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -180,7 +186,7 @@ private fun TvVideoCardContent(
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = DateUtils.formatDuration(duration),
+                            text = DateUtils.formatDuration(duration) + partsSuffix,
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
