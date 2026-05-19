@@ -193,7 +193,34 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
         AVPlayerManager.shared.playerViewController = controller
         AVPlayerManager.shared.playerViewControllerDelegate = context.coordinator
 
+        // GH #11: side-loaded captions. AVPlayerViewController has a built-in
+        // contentOverlayView that sits *above* the video surface and *below*
+        // the playback controls, which is exactly where subtitles belong.
+        // The hosted SwiftUI view observes AVPlayerManager and re-renders
+        // when the active cue changes.
+        attachCaptionsOverlay(to: controller)
+
         return controller
+    }
+
+    /// Mount a SwiftUI captions overlay onto the AVPlayerViewController's
+    /// content overlay so it sits above the video but under the controls.
+    private func attachCaptionsOverlay(to controller: AVPlayerViewController) {
+        guard let overlayHost = controller.contentOverlayView else { return }
+        let hosting = UIHostingController(rootView: CaptionsOverlay(playerManager: AVPlayerManager.shared))
+        hosting.view.backgroundColor = .clear
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        // Don't let the hosting view intercept the player's touch / focus
+        // handling — the overlay itself already sets allowsHitTesting(false).
+        hosting.view.isUserInteractionEnabled = false
+
+        overlayHost.addSubview(hosting.view)
+        NSLayoutConstraint.activate([
+            hosting.view.leadingAnchor.constraint(equalTo: overlayHost.leadingAnchor),
+            hosting.view.trailingAnchor.constraint(equalTo: overlayHost.trailingAnchor),
+            hosting.view.topAnchor.constraint(equalTo: overlayHost.topAnchor),
+            hosting.view.bottomAnchor.constraint(equalTo: overlayHost.bottomAnchor),
+        ])
     }
 
     func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {

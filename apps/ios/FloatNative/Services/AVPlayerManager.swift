@@ -11,6 +11,7 @@ import AVFoundation
 import Combine
 import SwiftUI
 import MediaPlayer
+import MediaAccessibility
 
 // MARK: - Player State
 
@@ -56,6 +57,20 @@ class AVPlayerManager: NSObject, ObservableObject {
     @Published private(set) var isPlaying = false
     @Published private(set) var availableQualities: [QualityVariant] = []
     @Published private(set) var currentQuality: QualityVariant?
+
+    // Captions (GH #11). The synthetic-master HLS path didn't survive
+    // AVPlayer's parser, so we render captions ourselves as a SwiftUI
+    // overlay driven by currentTime + cues. The CC button in the player
+    // chrome toggles `captionsEnabled`.
+    @Published private(set) var captionCues: [VTTCue] = []
+    @Published var captionsEnabled: Bool = false
+
+    /// Cached system caption preference. We seed `captionsEnabled` from
+    /// this when loading a video that has captions, so users with system
+    /// captions on don't have to tap the in-app CC button on every video.
+    static var systemCaptionsEnabled: Bool {
+        MACaptionAppearanceGetDisplayType(.user) != .automatic
+    }
 
     // MARK: - PIP State (managed by CustomVideoPlayer)
 
@@ -242,11 +257,10 @@ class AVPlayerManager: NSObject, ObservableObject {
         startTime: Double = 0,
         qualities: [QualityVariant],
         isLive: Bool = false,
-        // Floatplane's text tracks for the currently-loading video (GH #11).
-        // When present, loadStream routes through a synthetic HLS master so
-        // captions show up under the AVPlayer CC button.
-        textTracks: [VideoResourceLoader.TextTrack] = [],
-        durationSeconds: Int = 0
+        // Caption cues parsed from Floatplane's WebVTT (GH #11). Stored on
+        // the manager so CaptionsOverlayView can render the active cue based
+        // on currentTime. Empty for videos without captions.
+        captionCues: [VTTCue] = []
     ) async throws {
         self.currentVideoId = videoId
         self.currentVideoTitle = title
@@ -254,6 +268,10 @@ class AVPlayerManager: NSObject, ObservableObject {
         self.availableQualities = qualities
         self.playerState = .loading
         self.isLiveStream = isLive
+        self.captionCues = captionCues
+        // Auto-enable when the user has system captions on AND the post
+        // ships a caption track. Otherwise leave the in-app toggle off.
+        self.captionsEnabled = !captionCues.isEmpty && Self.systemCaptionsEnabled
 
         // Use highest quality by default
         guard let quality = qualities.first else {
@@ -262,26 +280,14 @@ class AVPlayerManager: NSObject, ObservableObject {
 
         self.currentQuality = quality
 
-        print("🎬 [AVPlayerManager] Loading video: \(title) (Live: \(isLive)) tracks: \(textTracks.count)")
-        try await loadStream(
-            url: quality.url,
-            startTime: startTime,
-            isLive: isLive,
-            textTracks: textTracks,
-            durationSeconds: durationSeconds
-        )
+        print("🎬 [AVPlayerManager] Loading video: \(title) (Live: \(isLive)) cues: \(captionCues.count)")
+        try await loadStream(url: quality.url, startTime: startTime, isLive: isLive)
     }
 
     private let resourceLoader = VideoResourceLoader()
-    
+
     /// Load stream from URL
-    private func loadStream(
-        url: String,
-        startTime: Double = 0,
-        isLive: Bool,
-        textTracks: [VideoResourceLoader.TextTrack] = [],
-        durationSeconds: Int = 0
-    ) async throws {
+    private func loadStream(url: String, startTime: Double = 0, isLive: Bool) async throws {
         // Clean up old player
         cleanupPlayer()
 
@@ -292,7 +298,7 @@ class AVPlayerManager: NSObject, ObservableObject {
         try? audioSession.setActive(true)
 
         let asset: AVURLAsset
-        
+
         if isLive {
             // Bypass VideoResourceLoader for Live Streams
             // Use the original URL directly so AVPlayer handles HLS natively
@@ -300,38 +306,22 @@ class AVPlayerManager: NSObject, ObservableObject {
                 throw FloatplaneAPIError.invalidURL
             }
             print("📡 [AVPlayerManager] Loading LIVE stream directly: \(streamURL)")
-            
+
             // Create asset without custom resource loader
             asset = AVURLAsset(url: streamURL)
             // No resourceLoader delegate set for live streams
         } else {
-            // Convert HTTP/HTTPS to custom scheme to force interception via VideoResourceLoader
+            // Convert HTTP/HTTPS to custom scheme to force interception via VideoResourceLoader.
+            // This is what gives DPoP + key-rewrite a hook into the HLS pipeline. Captions
+            // no longer ride this path — they're rendered as a SwiftUI overlay (GH #11).
             guard var components = URLComponents(string: url) else {
                 throw FloatplaneAPIError.invalidURL
             }
             components.scheme = "floatnative" // Must match VideoResourceLoader.customScheme
-
-            guard let upstreamVariantURL = URL(string: url), let interceptedVariantURL = components.url else {
+            guard let streamURL = components.url else {
                 throw FloatplaneAPIError.invalidURL
             }
-
-            // GH #11: route through a synthetic HLS master when the video has
-            // caption tracks. The master + per-track subs playlist + sliced
-            // .vtt segments are all served in-memory by VideoResourceLoader;
-            // only the upstream .vtt body itself hits the network.
-            let streamURL: URL
-            if !textTracks.isEmpty {
-                resourceLoader.registerCaptions(
-                    variantURL: upstreamVariantURL,
-                    textTracks: textTracks,
-                    durationSeconds: durationSeconds
-                )
-                streamURL = VideoResourceLoader.syntheticMasterURL
-                print("📼 [AVPlayerManager] Loading VOD with synthetic master for \(textTracks.count) caption track(s): \(streamURL)")
-            } else {
-                streamURL = interceptedVariantURL
-                print("📼 [AVPlayerManager] Loading VOD stream with interception: \(streamURL)")
-            }
+            print("📼 [AVPlayerManager] Loading VOD stream with interception: \(streamURL)")
 
             // Create new player with Interceptor
             // We do NOT pass headers here because the ResourceLoader will handle the request.

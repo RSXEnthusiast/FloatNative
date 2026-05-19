@@ -218,12 +218,27 @@ struct VideoPlayerTvosView: View {
             }
         } : nil
 
+        // Captions toggle (GH #11) — only when the loaded video has cues.
+        // Toggling flips AVPlayerManager.captionsEnabled, which the
+        // CaptionsOverlay observes; we rebuild transport bar items after to
+        // refresh the icon's filled/unfilled state.
+        let captionsAvailable = !playerManager.captionCues.isEmpty
+        let captionsOn = playerManager.captionsEnabled
+        let captionsAction: UIAction? = captionsAvailable ? UIAction(
+            title: captionsOn ? "Subtitles On" : "Subtitles Off",
+            image: UIImage(systemName: captionsOn ? "captions.bubble.fill" : "captions.bubble")
+        ) { _ in
+            playerManager.captionsEnabled.toggle()
+            self.customTransportBarItems = self.buildFullTransportBarItems()
+        } : nil
+
         var items: [UIMenuElement] = [
             likeAction,
             dislikeAction,
             descriptionAction,
             commentsAction,
         ]
+        if let captionsAction { items.append(captionsAction) }
         if let partsAction { items.append(partsAction) }
         items.append(qualityMenu)
         items.append(speedMenu)
@@ -423,6 +438,12 @@ struct VideoPlayerTvosView: View {
                 customTransportBarItems = buildFullTransportBarItems()
             }
             .onChange(of: playerManager.availableQualities) { _, newValue in
+                customTransportBarItems = buildFullTransportBarItems()
+            }
+            // Captions arrive after loadInteractionState fetches the
+            // detailed post + we parse the WebVTT. Rebuild the transport bar
+            // so the CC toggle appears once cues land.
+            .onChange(of: playerManager.captionCues) { _, _ in
                 customTransportBarItems = buildFullTransportBarItems()
             }
 
@@ -1046,21 +1067,9 @@ struct VideoPlayerTvosView: View {
 
             let qualities = deliveryInfo.availableVariants()
 
-            // Map Floatplane's text tracks for AVPlayer's synthetic master
-            // (GH #11). tvOS uses the system "Closed Captions + SDH" pref
-            // surfaced via MACaptionAppearance, same as iOS.
-            let systemCaptionsOn = MACaptionAppearanceGetDisplayType(.user) != .automatic
-            let captionTracks: [VideoResourceLoader.TextTrack] = (content.textTracks ?? [])
-                .compactMap { track in
-                    guard let src = URL(string: track.src) else { return nil }
-                    let label = track.generated == true ? "Auto-generated" : "English"
-                    return VideoResourceLoader.TextTrack(
-                        url: src,
-                        language: track.language ?? "en",
-                        label: label,
-                        isDefault: systemCaptionsOn
-                    )
-                }
+            // Fetch + parse caption cues out-of-band (GH #11). Captions are
+            // rendered as a SwiftUI overlay, not via AVPlayer's HLS pipeline.
+            let captionCues = await fetchCaptionCues(from: content.textTracks ?? [])
 
             // Load video into player
             try await playerManager.loadVideo(
@@ -1069,8 +1078,7 @@ struct VideoPlayerTvosView: View {
                 post: post,
                 startTime: Double(content.progress ?? 0),
                 qualities: qualities,
-                textTracks: captionTracks,
-                durationSeconds: Int(content.duration)
+                captionCues: captionCues
             )
 
 

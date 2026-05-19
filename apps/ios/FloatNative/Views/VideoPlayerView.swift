@@ -443,20 +443,9 @@ struct VideoPlayerView: View {
 
             let qualities = deliveryInfo.availableVariants()
 
-            // Map Floatplane's text tracks into the loader's TextTrack
-            // form (GH #11). System caption pref decides DEFAULT/AUTOSELECT.
-            let systemCaptionsOn = MACaptionAppearanceGetDisplayType(.user) != .automatic
-            let captionTracks: [VideoResourceLoader.TextTrack] = (content.textTracks ?? [])
-                .compactMap { track in
-                    guard let src = URL(string: track.src) else { return nil }
-                    let label = track.generated == true ? "Auto-generated" : "English"
-                    return VideoResourceLoader.TextTrack(
-                        url: src,
-                        language: track.language ?? "en",
-                        label: label,
-                        isDefault: systemCaptionsOn
-                    )
-                }
+            // Fetch + parse caption cues out-of-band (GH #11). Captions are
+            // rendered as a SwiftUI overlay, not via AVPlayer's HLS pipeline.
+            let captionCues = await fetchCaptionCues(from: content.textTracks ?? [])
 
             // Load video into player
             try await playerManager.loadVideo(
@@ -465,8 +454,7 @@ struct VideoPlayerView: View {
                 post: post,
                 startTime: Double(content.progress ?? 0),
                 qualities: qualities,
-                textTracks: captionTracks,
-                durationSeconds: Int(content.duration)
+                captionCues: captionCues
             )
 
             // Auto-play
@@ -1187,6 +1175,22 @@ struct VideoPlayerView: View {
             }
             .disabled(isChangingQuality || playerManager.availableQualities.isEmpty)
             }
+
+            // Caption toggle — only shows for videos that actually ship a
+            // text track (GH #11). Sits to the left of the rotate button
+            // for muscle-memory alignment with iOS's native CC affordance.
+            #if !os(tvOS)
+            if post.metadata.hasVideo && !playerManager.captionCues.isEmpty {
+                Button {
+                    playerManager.captionsEnabled.toggle()
+                } label: {
+                    Image(systemName: playerManager.captionsEnabled ? "captions.bubble.fill" : "captions.bubble")
+                        .font(.title2)
+                        .foregroundColor(playerManager.captionsEnabled ? .floatplaneBlue : Color.adaptiveText)
+                }
+                .accessibilityLabel(playerManager.captionsEnabled ? "Hide captions" : "Show captions")
+            }
+            #endif
 
             // Force-landscape button — lives here rather than as an overlay
             // on the player because AVPlayerViewController on iOS doesn't
