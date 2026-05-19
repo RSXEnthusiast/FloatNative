@@ -190,6 +190,12 @@ fun SettingsScreen(
                     modifier = Modifier.clickable { showDonateDialog = true }
                 )
                 ListItem(
+                    headlineContent = { Text("What's New in This Version") },
+                    modifier = Modifier.clickable {
+                        com.coulterpeterson.floatnative.utils.WhatsNewRepository.presentManually(context)
+                    }
+                )
+                ListItem(
                     headlineContent = { Text("Join the Discord to Share Feedback") },
                     modifier = Modifier.clickable {
                         uriHandler.openUri("https://discord.gg/VvgCsKBwpP")

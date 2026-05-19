@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var api = FloatplaneAPI.shared
     @ObservedObject private var themeManager = ThemeManager.shared
+    @ObservedObject private var whatsNew = WhatsNewService.shared
     @State private var showLogin = false
 
     var body: some View {
@@ -26,6 +27,12 @@ struct ContentView: View {
             if !api.isAuthenticated {
                 showLogin = true
             }
+            // Fire What's New if this is an upgraded launch (no-op on fresh
+            // installs — see WhatsNewService).
+            whatsNew.presentIfNeeded()
+        }
+        .sheet(isPresented: $whatsNew.isPresented) {
+            WhatsNewSheet()
         }
     }
 

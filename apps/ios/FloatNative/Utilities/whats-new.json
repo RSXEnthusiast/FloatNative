@@ -1,0 +1,26 @@
+{
+  "version": "1.7",
+  "title": "What's New in 1.7",
+  "items": [
+    {
+      "icon": "heart.fill",
+      "title": "Support / Donate",
+      "body": "New Settings entry to support FloatNative's development."
+    },
+    {
+      "icon": "rectangle.landscape.rotate",
+      "title": "Force Landscape",
+      "body": "Lock to landscape from the player even when rotation lock is on."
+    },
+    {
+      "icon": "speedometer",
+      "title": "Playback Speed Sticks",
+      "body": "Your chosen playback speed now carries from one video to the next. Apple TV gets a Speed menu too."
+    },
+    {
+      "icon": "tv",
+      "title": "Android TV / Fire TV stays awake",
+      "body": "Screen no longer dims during playback."
+    }
+  ]
+}

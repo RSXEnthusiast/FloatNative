@@ -269,6 +269,27 @@ struct SettingsView: View {
                     .padding(.vertical, 8)
                     #endif
 
+                    // What's New — re-open the release-notes sheet on demand
+                    // without mutating "last seen" state.
+                    Button {
+                        WhatsNewService.shared.presentManually()
+                    } label: {
+                        HStack {
+                            Image(systemName: "sparkles")
+                                .font(.title3)
+                            Text("What's New in This Version")
+                                .font(.body)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.floatplaneBlue)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                    }
+                    #if !os(tvOS)
+                    .liquidGlass(tint: .floatplaneBlue, opacity: 0.4)
+                    #endif
+                    .padding(.horizontal)
+
                     // Debug Log Link — exposes recent API/decode failures so
                     // users can paste them into a bug report.
                     #if !os(tvOS)

@@ -1,0 +1,26 @@
+{
+  "version": "1.7",
+  "title": "What's New in 1.7",
+  "items": [
+    {
+      "icon": "favorite",
+      "title": "Support / Donate",
+      "body": "New Settings entry to support FloatNative's development."
+    },
+    {
+      "icon": "speed",
+      "title": "Playback Speed Sticks",
+      "body": "Your chosen playback speed now carries from one video to the next."
+    },
+    {
+      "icon": "lightbulb",
+      "title": "Android TV / Fire TV stays awake",
+      "body": "Screen no longer dims during playback."
+    },
+    {
+      "icon": "android",
+      "title": "Sideloaded APK icon",
+      "body": "Standalone APK builds now show the FloatNative icon instead of the default Android robot."
+    }
+  ]
+}

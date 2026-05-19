@@ -7,18 +7,33 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.coulterpeterson.floatnative.api.FloatplaneApi
+import com.coulterpeterson.floatnative.ui.components.WhatsNewDialog
 import com.coulterpeterson.floatnative.ui.screens.MainScreen
 import com.coulterpeterson.floatnative.ui.screens.auth.LoginScreen
 import com.coulterpeterson.floatnative.utils.DebugLogManager
+import com.coulterpeterson.floatnative.utils.WhatsNewRepository
 
 @Composable
 fun AppNavigation(startDestination: String = Screen.Login.route) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+
+    // Fire the "What's New" check exactly once per launch. WhatsNewRepository
+    // suppresses on fresh installs and only shows when the bundled version
+    // has bumped past whatever's in SharedPreferences.
+    LaunchedEffect(Unit) {
+        WhatsNewRepository.presentIfNeeded(context)
+    }
+    val showWhatsNew by WhatsNewRepository.shouldShow.collectAsState()
+    if (showWhatsNew) {
+        WhatsNewDialog(onDismiss = { WhatsNewRepository.dismiss(context) })
+    }
 
     // Observe the access-token state flow to detect when AuthInterceptor has
     // exhausted its refresh path and called tokenManager.clearAll(). This is
