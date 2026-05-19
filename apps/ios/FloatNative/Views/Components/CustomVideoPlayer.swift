@@ -154,10 +154,6 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
             // Reuse the existing delegate (Coordinator) to maintain callback connection
             existingController.delegate = existingDelegate as? AVPlayerViewControllerDelegate
             existingController.showsPlaybackControls = showsPlaybackControls
-            #if !os(tvOS)
-            existingController.allowsPictureInPicturePlayback = true
-            existingController.canStartPictureInPictureAutomaticallyFromInline = true
-            #endif
             return existingController
         }
 
@@ -171,13 +167,6 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
         controller.player = player
         controller.showsPlaybackControls = showsPlaybackControls
         controller.allowsPictureInPicturePlayback = true
-        #if !os(tvOS)
-        // Auto-enter PiP when the app backgrounds (lock screen, app switcher).
-        // Without this, AVPlayerViewController pauses inline playback on lock
-        // even though `audio` is in UIBackgroundModes and the audio session
-        // is `.playback`.
-        controller.canStartPictureInPictureAutomaticallyFromInline = true
-        #endif
         controller.delegate = context.coordinator
 
         #if os(tvOS)
@@ -210,13 +199,6 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
 
         // Update playback controls visibility
         uiViewController.showsPlaybackControls = showsPlaybackControls
-
-        #if !os(tvOS)
-        // Re-assert auto-PiP-from-inline on every update so reused / mutated
-        // controllers can't end up without it. See makeUIViewController.
-        uiViewController.allowsPictureInPicturePlayback = true
-        uiViewController.canStartPictureInPictureAutomaticallyFromInline = true
-        #endif
 
         #if os(tvOS)
         // Always apply transport bar items when they change
