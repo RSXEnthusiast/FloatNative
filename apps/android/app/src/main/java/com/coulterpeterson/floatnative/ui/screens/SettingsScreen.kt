@@ -6,7 +6,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -248,6 +251,13 @@ fun SettingsScreen(
                     supportingContent = {
                         Text(if (isTv) "Show appreciation via Stripe — opens a QR code" else "Show appreciation via Stripe")
                     },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Filled.Favorite,
+                            contentDescription = null,
+                            tint = androidx.compose.ui.graphics.Color(0xFFE91E63),  // pink
+                        )
+                    },
                     modifier = Modifier.clickable {
                         if (isTv) {
                             // TV browsers can't navigate to external URLs cleanly,
@@ -260,22 +270,24 @@ fun SettingsScreen(
                 )
                 ListItem(
                     headlineContent = { Text("What's New in This Version") },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Filled.AutoAwesome,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    },
                     modifier = Modifier.clickable {
                         com.coulterpeterson.floatnative.utils.WhatsNewRepository.presentManually(context)
                     }
                 )
                 ListItem(
-                    headlineContent = {
-                        Text(
-                            "Send Feedback via Discord",
-                            color = androidx.compose.ui.graphics.Color(0xFF7C4DFF),
-                        )
-                    },
+                    headlineContent = { Text("Send Feedback via Discord") },
                     leadingContent = {
                         Icon(
                             imageVector = Icons.Filled.Forum,
                             contentDescription = null,
-                            tint = androidx.compose.ui.graphics.Color(0xFF7C4DFF),
+                            tint = androidx.compose.ui.graphics.Color(0xFF7C4DFF),  // discord-purple
                         )
                     },
                     modifier = Modifier.clickable {
@@ -284,6 +296,13 @@ fun SettingsScreen(
                 )
                 ListItem(
                     headlineContent = { Text("Subscribe to Coulter Peterson on YouTube") },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Filled.Subscriptions,
+                            contentDescription = null,
+                            tint = androidx.compose.ui.graphics.Color(0xFFFF0000),  // youtube red
+                        )
+                    },
                     modifier = Modifier.clickable {
                         uriHandler.openUri("https://www.youtube.com/@CoulterPeterson")
                     }
