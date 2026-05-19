@@ -79,6 +79,17 @@
           }
         }
       },
+      "CommentModel": {
+        "_comment": "Upstream types userInteraction as UserInteractionModel (array | null) — that matches /api/v3/content/post responses but NOT /api/v3/comment responses, where the field comes back as a single string (\"like\" / \"dislike\") or null. Confirmed in a live response captured 2026-05-19. Decode the comment shape with a single-value type so the comments list stops failing the moment a user has actually liked a comment. The explicit `$ref: null` is RFC 7396 for \"remove the upstream $ref so our inline definition wins\".",
+        "properties": {
+          "userInteraction": {
+            "$ref": null,
+            "type": "string",
+            "nullable": true,
+            "enum": ["like", "dislike"]
+          }
+        }
+      },
       "CommentV3ReplyRequest": {
         "_comment": "Reply-to-comment request body, restored after live API testing confirmed POST /api/v3/comment rejects any field other than {blogPost, text}. Real reply path is POST /api/v3/comment/reply with {blogPost, text, replyTo}. This matches the pre-regen codegen the Android app was originally built against (see commit d021803).",
         "type": "object",

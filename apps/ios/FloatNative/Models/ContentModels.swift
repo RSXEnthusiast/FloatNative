@@ -23,7 +23,7 @@ typealias BlogPostDetailed = ContentPostV3Response
 // Wrapper to add selfUserInteraction field that's missing from OpenAPI spec
 struct BlogPostDetailedWithInteraction: Codable {
     let post: ContentPostV3Response
-    let selfUserInteraction: ContentPostV3Response.UserInteraction?
+    let selfUserInteraction: ContentPostV3Response.SelfUserInteraction?
 
     enum CodingKeys: String, CodingKey {
         case selfUserInteraction
@@ -34,7 +34,7 @@ struct BlogPostDetailedWithInteraction: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         // Decode selfUserInteraction from the container
-        selfUserInteraction = try? container.decodeIfPresent(ContentPostV3Response.UserInteraction.self, forKey: .selfUserInteraction)
+        selfUserInteraction = try? container.decodeIfPresent(ContentPostV3Response.SelfUserInteraction.self, forKey: .selfUserInteraction)
 
         // Now decode the main post (this will ignore the selfUserInteraction field)
         post = try ContentPostV3Response(from: decoder)

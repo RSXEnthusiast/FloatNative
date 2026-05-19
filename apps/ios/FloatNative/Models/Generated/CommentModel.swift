@@ -33,9 +33,9 @@ public struct CommentModel: Codable, JSONEncodable, Hashable {
     public var totalReplies: Int?
     /** This is present (but possibly empty) for top-level comments. This is never present for reply comments. */
     public var replies: [CommentModel]?
-    public var userInteraction: [UserInteraction]?
+    public var userInteraction: UserInteraction?
 
-    public init(id: String, blogPost: String, user: UserModel, text: String, replying: String?, postDate: Date, editDate: Date?, pinDate: Date? = nil, editCount: Int, isEdited: Bool, likes: Int, dislikes: Int, score: Int, interactionCounts: CommentV3PostResponseInteractionCounts, totalReplies: Int? = nil, replies: [CommentModel]? = nil, userInteraction: [UserInteraction]?) {
+    public init(id: String, blogPost: String, user: UserModel, text: String, replying: String?, postDate: Date, editDate: Date?, pinDate: Date? = nil, editCount: Int, isEdited: Bool, likes: Int, dislikes: Int, score: Int, interactionCounts: CommentV3PostResponseInteractionCounts, totalReplies: Int? = nil, replies: [CommentModel]? = nil, userInteraction: UserInteraction?) {
         self.id = id
         self.blogPost = blogPost
         self.user = user

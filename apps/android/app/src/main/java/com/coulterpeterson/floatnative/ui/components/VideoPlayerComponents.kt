@@ -319,7 +319,7 @@ fun CommentItem(
                 // Interaction Row
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Like Button
-                    val isLiked = comment.userInteraction?.contains(CommentModel.UserInteraction.like) == true
+                    val isLiked = comment.userInteraction == CommentModel.UserInteraction.like
                     Row(
                         modifier = Modifier
                             .clickable { onLike(comment.id) }
@@ -343,7 +343,7 @@ fun CommentItem(
                     Spacer(modifier = Modifier.width(16.dp))
 
                     // Dislike Button
-                    val isDisliked = comment.userInteraction?.contains(CommentModel.UserInteraction.dislike) == true
+                    val isDisliked = comment.userInteraction == CommentModel.UserInteraction.dislike
                     Row(
                         modifier = Modifier
                             .clickable { onDislike(comment.id) }

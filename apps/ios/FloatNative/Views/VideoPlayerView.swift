@@ -26,7 +26,9 @@ struct VideoPlayerView: View {
     // Like/Dislike state (will be initialized from post)
     @State private var currentLikes: Int = 0
     @State private var currentDislikes: Int = 0
-    @State private var userInteraction: ContentPostV3Response.UserInteraction?
+    // Post-level interaction lives under selfUserInteraction in the
+    // /api/v3/content/post response (Floatplane's custom field).
+    @State private var userInteraction: ContentPostV3Response.SelfUserInteraction?
 
     // Comments state
     @State private var showComments = false
@@ -1321,7 +1323,7 @@ struct VideoPlayerView: View {
                             }
                         } label: {
                             HStack(spacing: 4) {
-                                let hasLiked = comment.userInteraction?.contains(.like) ?? false
+                                let hasLiked = comment.userInteraction == .like
                                 Image(systemName: hasLiked ? "hand.thumbsup.fill" : "hand.thumbsup")
                                     .font(.caption)
                                 Text("\(comment.interactionCounts.like)")
@@ -1337,7 +1339,7 @@ struct VideoPlayerView: View {
                             }
                         } label: {
                             HStack(spacing: 4) {
-                                let hasDisliked = comment.userInteraction?.contains(.dislike) ?? false
+                                let hasDisliked = comment.userInteraction == .dislike
                                 Image(systemName: hasDisliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
                                     .font(.caption)
                                 Text("\(comment.interactionCounts.dislike)")
@@ -1413,9 +1415,10 @@ struct VideoPlayerView: View {
 
     /// Like a comment with optimistic update
     private func likeComment(_ comment: Comment) async {
-        // Determine current state
-        let hasLiked = comment.userInteraction?.contains(.like) ?? false
-        let hasDisliked = comment.userInteraction?.contains(.dislike) ?? false
+        // userInteraction is a single value (or nil), not an array — the
+        // upstream spec disagrees but every real response confirms it.
+        let hasLiked = comment.userInteraction == .like
+        let hasDisliked = comment.userInteraction == .dislike
 
         // Save previous state for rollback
         let previousComments = comments
@@ -1425,29 +1428,26 @@ struct VideoPlayerView: View {
             comments = updateComment(in: comments, commentId: comment.id) { updatedComment in
                 var newLikeCount = updatedComment.interactionCounts.like
                 var newDislikeCount = updatedComment.interactionCounts.dislike
-                var newUserInteraction: [Comment.UserInteraction]? = updatedComment.userInteraction ?? []
 
                 if hasLiked {
-                    // Unlike: remove like
+                    // Unlike
                     newLikeCount -= 1
-                    newUserInteraction?.removeAll { $0 == .like }
+                    updatedComment.userInteraction = nil
                 } else if hasDisliked {
                     // Switch from dislike to like
                     newDislikeCount -= 1
                     newLikeCount += 1
-                    newUserInteraction?.removeAll { $0 == .dislike }
-                    newUserInteraction?.append(.like)
+                    updatedComment.userInteraction = .like
                 } else {
                     // Add like
                     newLikeCount += 1
-                    newUserInteraction?.append(.like)
+                    updatedComment.userInteraction = .like
                 }
 
                 updatedComment.interactionCounts = CommentV3PostResponseInteractionCounts(
                     like: newLikeCount,
                     dislike: newDislikeCount
                 )
-                updatedComment.userInteraction = newUserInteraction?.isEmpty == true ? nil : newUserInteraction
             }
         }
 
@@ -1465,9 +1465,8 @@ struct VideoPlayerView: View {
 
     /// Dislike a comment with optimistic update
     private func dislikeComment(_ comment: Comment) async {
-        // Determine current state
-        let hasLiked = comment.userInteraction?.contains(.like) ?? false
-        let hasDisliked = comment.userInteraction?.contains(.dislike) ?? false
+        let hasLiked = comment.userInteraction == .like
+        let hasDisliked = comment.userInteraction == .dislike
 
         // Save previous state for rollback
         let previousComments = comments
@@ -1477,29 +1476,26 @@ struct VideoPlayerView: View {
             comments = updateComment(in: comments, commentId: comment.id) { updatedComment in
                 var newLikeCount = updatedComment.interactionCounts.like
                 var newDislikeCount = updatedComment.interactionCounts.dislike
-                var newUserInteraction: [Comment.UserInteraction]? = updatedComment.userInteraction ?? []
 
                 if hasDisliked {
-                    // Undislike: remove dislike
+                    // Undislike
                     newDislikeCount -= 1
-                    newUserInteraction?.removeAll { $0 == .dislike }
+                    updatedComment.userInteraction = nil
                 } else if hasLiked {
                     // Switch from like to dislike
                     newLikeCount -= 1
                     newDislikeCount += 1
-                    newUserInteraction?.removeAll { $0 == .like }
-                    newUserInteraction?.append(.dislike)
+                    updatedComment.userInteraction = .dislike
                 } else {
                     // Add dislike
                     newDislikeCount += 1
-                    newUserInteraction?.append(.dislike)
+                    updatedComment.userInteraction = .dislike
                 }
 
                 updatedComment.interactionCounts = CommentV3PostResponseInteractionCounts(
                     like: newLikeCount,
                     dislike: newDislikeCount
                 )
-                updatedComment.userInteraction = newUserInteraction?.isEmpty == true ? nil : newUserInteraction
             }
         }
 

@@ -86,7 +86,7 @@ data class CommentModel (
     val interactionCounts: CommentV3PostResponseInteractionCounts,
 
     @Json(name = "userInteraction")
-    val userInteraction: kotlin.collections.List<CommentModel.UserInteraction>?,
+    val userInteraction: CommentModel.UserInteraction?,
 
     @Json(name = "pinDate")
     val pinDate: java.time.OffsetDateTime? = null,

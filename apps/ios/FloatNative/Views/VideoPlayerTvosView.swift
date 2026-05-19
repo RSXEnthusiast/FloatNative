@@ -36,7 +36,7 @@ struct VideoPlayerTvosView: View {
     // Like/Dislike state
     @State private var currentLikes: Int = 0
     @State private var currentDislikes: Int = 0
-    @State private var userInteraction: ContentPostV3Response.UserInteraction?
+    @State private var userInteraction: ContentPostV3Response.SelfUserInteraction?
 
     // Comments state
     @State private var comments: [Comment] = []

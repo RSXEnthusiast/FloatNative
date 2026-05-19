@@ -342,7 +342,9 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
                 }
                 val post = postResponse.body()!!
 
-                // Determine initial interaction state causing types to match
+                // Post-level userInteraction is still an array in
+                // /api/v3/content/post — typically 0 or 1 elements. Flatten
+                // to the single value our state stores.
                 val initialInteraction = post.userInteraction?.firstOrNull()
 
                 // 2. Pick the canonical primary video (GH #23). attachmentOrder
@@ -743,45 +745,45 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
     private fun updateCommentInteraction(comments: List<CommentModel>, targetId: String, isLike: Boolean): List<CommentModel> {
         return comments.map { comment ->
             if (comment.id == targetId) {
-                val currentLikes = comment.userInteraction?.contains(CommentModel.UserInteraction.like) == true
-                val currentDislikes = comment.userInteraction?.contains(CommentModel.UserInteraction.dislike) == true
-                
-                val newInteraction = ArrayList<CommentModel.UserInteraction>()
-                // Copy existing interactions excluding like/dislike
-                comment.userInteraction?.forEach {
-                    if (it != CommentModel.UserInteraction.like && it != CommentModel.UserInteraction.dislike) {
-                        newInteraction.add(it)
-                    }
-                }
+                // Comment-level userInteraction is a single value (or null) —
+                // /api/v3/comment returns the field flat, unlike /content/post
+                // which still uses an array. Mirror the post-level toggle
+                // logic but on the comment's nested enum.
+                val current = comment.userInteraction
+                val currentlyLiked = current == CommentModel.UserInteraction.like
+                val currentlyDisliked = current == CommentModel.UserInteraction.dislike
 
                 var newLikeCount = comment.likes
                 var newDislikeCount = comment.dislikes
-                
+                val newInteraction: CommentModel.UserInteraction?
+
                 if (isLike) {
-                   if (currentLikes) {
-                       newLikeCount--
-                   } else {
-                       newLikeCount++
-                       newInteraction.add(CommentModel.UserInteraction.like)
-                       if (currentDislikes) newDislikeCount--
-                   }
+                    if (currentlyLiked) {
+                        newLikeCount--
+                        newInteraction = null
+                    } else {
+                        newLikeCount++
+                        if (currentlyDisliked) newDislikeCount--
+                        newInteraction = CommentModel.UserInteraction.like
+                    }
                 } else { // Dislike
-                    if (currentDislikes) {
+                    if (currentlyDisliked) {
                         newDislikeCount--
+                        newInteraction = null
                     } else {
                         newDislikeCount++
-                        newInteraction.add(CommentModel.UserInteraction.dislike)
-                        if (currentLikes) newLikeCount--
+                        if (currentlyLiked) newLikeCount--
+                        newInteraction = CommentModel.UserInteraction.dislike
                     }
                 }
-                
+
                 comment.copy(
-                    likes = newLikeCount, 
+                    likes = newLikeCount,
                     dislikes = newDislikeCount,
                     userInteraction = newInteraction,
                     interactionCounts = com.coulterpeterson.floatnative.openapi.models.CommentV3PostResponseInteractionCounts(
                         like = newLikeCount,
-                         dislike = newDislikeCount
+                        dislike = newDislikeCount
                     )
                 )
             } else {
@@ -833,7 +835,7 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
             dislikes = 0,
             score = 0,
             interactionCounts = CommentV3PostResponseInteractionCounts(0, 0),
-            userInteraction = emptyList(),
+            userInteraction = null,
             totalReplies = 0,
             replies = emptyList()
         )
