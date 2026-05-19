@@ -43,10 +43,6 @@ class MainActivity : AppCompatActivity() {
     fun updatePipParams(aspectRatio: android.util.Rational?) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val ratio = aspectRatio ?: android.util.Rational(16, 9)
-            android.util.Log.d(
-                "PiPDebug",
-                "updatePipParams ratio=${ratio.numerator}:${ratio.denominator} (${ratio.toFloat()}) inPip=$isInPipMode"
-            )
             val builder = android.app.PictureInPictureParams.Builder()
                 .setAspectRatio(ratio)
             pipParams = builder
@@ -114,35 +110,43 @@ class MainActivity : AppCompatActivity() {
         super.onUserLeaveHint()
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val ratio = currentVideoRatio
-            android.util.Log.d(
-                "PiPDebug",
-                "onUserLeaveHint isVideoPlaying=$isVideoPlaying currentVideoRatio=${ratio?.let { "${it.numerator}:${it.denominator}" } ?: "null"} pipParamsCached=${pipParams != null}"
-            )
             // Skip PiP entry when we haven't yet resolved the current video's
             // aspect ratio (GH #41). Entering with a stale or hardcoded 16:9
             // produced a broken layout that the user could only fix by
-            // resizing the PiP window. Better to just background the app
-            // normally and let them come back to the full player.
+            // resizing the PiP window.
             if (isVideoPlaying && ratio != null) {
                 val params = (pipParams ?: android.app.PictureInPictureParams.Builder()
                     .setAspectRatio(ratio))
                     .build()
-                android.util.Log.d("PiPDebug", "Calling enterPictureInPictureMode")
+                // Pre-flip isInPipMode BEFORE calling Android's PiP entry
+                // because `onPictureInPictureModeChanged(true)` is delivered
+                // ~700ms after the activity is already resized into the PiP
+                // window (confirmed via PiPDebug logs). Until that callback
+                // fires Compose still thinks we're in portrait, and renders
+                // the full portrait layout into the PiP window — that's the
+                // "video stuck in the top-left of the mini-player" report.
+                // onResume rolls this back if PiP never actually engages.
+                isInPipMode = true
                 enterPictureInPictureMode(params)
-            } else {
-                android.util.Log.d("PiPDebug", "Skipping PiP entry (no ratio yet or video not playing)")
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Defensive rollback for the pre-flip in onUserLeaveHint — if PiP
+        // never actually started (e.g. Android refused entry, or the user
+        // returned before the transition completed), we shouldn't be stuck
+        // rendering the fullscreen-PiP layout in a regular activity.
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            if (isInPipMode && !isInPictureInPictureMode) {
+                isInPipMode = false
             }
         }
     }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: android.content.res.Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
-        android.util.Log.d(
-            "PiPDebug",
-            "onPictureInPictureModeChanged inPip=$isInPictureInPictureMode " +
-                "configW=${newConfig.screenWidthDp}dp configH=${newConfig.screenHeightDp}dp " +
-                "ratio=${newConfig.screenWidthDp.toFloat() / newConfig.screenHeightDp}"
-        )
         isInPipMode = isInPictureInPictureMode
     }
     

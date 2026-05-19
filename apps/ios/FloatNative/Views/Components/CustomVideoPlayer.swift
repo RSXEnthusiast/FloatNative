@@ -180,8 +180,13 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
         if !contextualActions.isEmpty {
             controller.contextualActions = contextualActions
         }
-        // Hide subtitle options by restricting to empty language list
-        controller.allowedSubtitleOptionLanguages = [""]
+        // GH #11: previously suppressed subtitles entirely via
+        // `allowedSubtitleOptionLanguages = [""]`. With captions wiring on
+        // the asset (via AVMediaSelectionGroup once the synthetic-master
+        // path is re-enabled), the tvOS swipe-down Info panel surfaces a
+        // proper Subtitles submenu — so we don't restrict the language
+        // list. AVPlayer hides the entry on its own when the asset
+        // exposes no legible tracks, so this is safe before captions ship.
         #endif
 
         // Store BOTH controller AND coordinator in AVPlayerManager to keep alive during PiP

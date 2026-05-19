@@ -99,12 +99,19 @@ fun TvVideoPlayerScreen(
         if (state is VideoPlayerState.Content) {
             val contentState = state as VideoPlayerState.Content
             if (contentState.videoUrl != null) {
-                if (exoPlayer.currentMediaItem == null || exoPlayer.currentMediaItem?.localConfiguration?.uri.toString() != contentState.videoUrl) {
+                val currentItem = exoPlayer.currentMediaItem
+                val currentUri = currentItem?.localConfiguration?.uri?.toString()
+                val currentSubsCount = currentItem?.localConfiguration?.subtitleConfigurations?.size ?: 0
+                val urlChanged = currentUri == null || currentUri != contentState.videoUrl
+                val subsChanged = currentSubsCount != contentState.textTracks.size
+
+                if (urlChanged || subsChanged) {
+                    val resumePosition = if (urlChanged) 0L else exoPlayer.currentPosition
                     val mediaItem = com.coulterpeterson.floatnative.utils.buildMediaItemWithSubtitles(
                         videoUrl = contentState.videoUrl,
                         textTracks = contentState.textTracks
                     )
-                    exoPlayer.setMediaItem(mediaItem)
+                    exoPlayer.setMediaItem(mediaItem, resumePosition)
                     exoPlayer.prepare()
                     
                     if (startTimestamp > 0 && !hasPerformedInitialSeek) {

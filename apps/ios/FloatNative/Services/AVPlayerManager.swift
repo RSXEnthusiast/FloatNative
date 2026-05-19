@@ -315,23 +315,18 @@ class AVPlayerManager: NSObject, ObservableObject {
                 throw FloatplaneAPIError.invalidURL
             }
 
-            // GH #11: when the post has caption tracks, point AVPlayer at a
-            // synthetic master playlist that references both this variant and
-            // a SUBTITLES rendition per track. The resource loader serves
-            // everything in memory (master + subs playlist + .vtt proxy).
-            let streamURL: URL
-            if !textTracks.isEmpty {
-                resourceLoader.registerCaptions(
-                    variantURL: upstreamVariantURL,
-                    textTracks: textTracks,
-                    durationSeconds: durationSeconds
-                )
-                streamURL = VideoResourceLoader.syntheticMasterURL
-                print("📼 [AVPlayerManager] Loading VOD with synthetic master for captions: \(streamURL)")
-            } else {
-                streamURL = interceptedVariantURL
-                print("📼 [AVPlayerManager] Loading VOD stream with interception: \(streamURL)")
-            }
+            // GH #11: the synthetic-master path (textTracks-aware) is staged
+            // but not yet enabled for iOS in v1.8. Early reports showed
+            // AVFoundation rejecting the asset (errSecPlayerRemoteXPC -12860 /
+            // errSecAsync -12785) so we fall back to the original variant URL.
+            // Re-enable once the master + subs playlist passes AVPlayer's
+            // validator; tracked as a follow-up. Android captions are
+            // unaffected (they use Media3's native SubtitleConfiguration).
+            _ = textTracks // silence unused-param warning while the path is off
+            _ = durationSeconds
+            _ = upstreamVariantURL
+            let streamURL: URL = interceptedVariantURL
+            print("📼 [AVPlayerManager] Loading VOD stream with interception: \(streamURL)")
 
             // Create new player with Interceptor
             // We do NOT pass headers here because the ResourceLoader will handle the request.
