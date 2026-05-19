@@ -30,7 +30,6 @@ import com.squareup.moshi.JsonClass
  * @param price 
  * @param currency 
  * @param logo 
- * @param interval 
  * @param featured 
  * @param discordServers 
  * @param discordRoles 
@@ -43,6 +42,7 @@ import com.squareup.moshi.JsonClass
  * @param userIsSubscribed 
  * @param enabledGlobal 
  * @param priceYearly 
+ * @param interval 
  * @param allowGrandfatheredAccess 
  * @param userIsGrandfathered 
  */
@@ -67,9 +67,6 @@ data class PlanInfoV2ResponsePlansInner (
 
     @Json(name = "logo")
     val logo: kotlin.String?,
-
-    @Json(name = "interval")
-    val interval: kotlin.String,
 
     @Json(name = "featured")
     val featured: kotlin.Boolean,
@@ -106,6 +103,9 @@ data class PlanInfoV2ResponsePlansInner (
 
     @Json(name = "priceYearly")
     val priceYearly: kotlin.String? = null,
+
+    @Json(name = "interval")
+    val interval: kotlin.String? = null,
 
     @Json(name = "allowGrandfatheredAccess")
     val allowGrandfatheredAccess: kotlin.Boolean? = null,

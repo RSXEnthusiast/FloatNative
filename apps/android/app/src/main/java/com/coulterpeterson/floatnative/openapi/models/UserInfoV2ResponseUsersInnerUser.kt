@@ -30,6 +30,7 @@ import com.squareup.moshi.JsonClass
  * @param profileImage 
  * @param email 
  * @param displayName 
+ * @param badges Badge IDs awarded to the user. Not in the upstream spec; observed in production on comment authors.
  */
 
 
@@ -48,7 +49,11 @@ data class UserInfoV2ResponseUsersInnerUser (
     val email: kotlin.String,
 
     @Json(name = "displayName")
-    val displayName: kotlin.String
+    val displayName: kotlin.String,
+
+    /* Badge IDs awarded to the user. Not in the upstream spec; observed in production on comment authors. */
+    @Json(name = "badges")
+    val badges: kotlin.collections.List<kotlin.String>? = null
 
 ) {
 

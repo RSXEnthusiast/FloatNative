@@ -22,12 +22,11 @@ public struct PostMetadataModel: Codable, JSONEncodable, Hashable {
     public var pictureCount: Int?
     public var hasGallery: Bool?
     public var galleryCount: Int?
-    // isFeatured is sometimes absent on real-world responses (livestream VODs
-    // and certain post types). Marked optional via packages/openapi/spec-overlay.json
-    // so future regenerations stay loose — see that file for the rationale.
     public var isFeatured: Bool?
+    /** Duration in seconds of the primary video on a post, distinct from videoDuration (which sums every video attachment). Use this on cards/feeds for multi-video posts. */
+    public var displayDuration: Int?
 
-    public init(hasVideo: Bool, videoCount: Int? = nil, videoDuration: Double, hasAudio: Bool, audioCount: Int? = nil, audioDuration: Double, hasPicture: Bool, pictureCount: Int? = nil, hasGallery: Bool? = nil, galleryCount: Int? = nil, isFeatured: Bool? = nil) {
+    public init(hasVideo: Bool, videoCount: Int? = nil, videoDuration: Double, hasAudio: Bool, audioCount: Int? = nil, audioDuration: Double, hasPicture: Bool, pictureCount: Int? = nil, hasGallery: Bool? = nil, galleryCount: Int? = nil, isFeatured: Bool? = nil, displayDuration: Int? = nil) {
         self.hasVideo = hasVideo
         self.videoCount = videoCount
         self.videoDuration = videoDuration
@@ -39,6 +38,7 @@ public struct PostMetadataModel: Codable, JSONEncodable, Hashable {
         self.hasGallery = hasGallery
         self.galleryCount = galleryCount
         self.isFeatured = isFeatured
+        self.displayDuration = displayDuration
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -53,6 +53,7 @@ public struct PostMetadataModel: Codable, JSONEncodable, Hashable {
         case hasGallery
         case galleryCount
         case isFeatured
+        case displayDuration
     }
 
     // Encodable protocol methods
@@ -70,6 +71,7 @@ public struct PostMetadataModel: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(hasGallery, forKey: .hasGallery)
         try container.encodeIfPresent(galleryCount, forKey: .galleryCount)
         try container.encodeIfPresent(isFeatured, forKey: .isFeatured)
+        try container.encodeIfPresent(displayDuration, forKey: .displayDuration)
     }
 }
 

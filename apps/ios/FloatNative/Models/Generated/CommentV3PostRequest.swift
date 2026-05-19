@@ -16,15 +16,19 @@ public struct CommentV3PostRequest: Codable, JSONEncodable, Hashable {
     public var blogPost: String
     /** The text of the comment being posted. */
     public var text: String
+    /** If posting a reply, the id of the parent CommentModel being replied to. Omit / null for a top-level comment. Not in the upstream spec; observed in production. */
+    public var replying: String?
 
-    public init(blogPost: String, text: String) {
+    public init(blogPost: String, text: String, replying: String? = nil) {
         self.blogPost = blogPost
         self.text = text
+        self.replying = replying
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case blogPost
         case text
+        case replying
     }
 
     // Encodable protocol methods
@@ -33,6 +37,7 @@ public struct CommentV3PostRequest: Codable, JSONEncodable, Hashable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(blogPost, forKey: .blogPost)
         try container.encode(text, forKey: .text)
+        try container.encodeIfPresent(replying, forKey: .replying)
     }
 }
 

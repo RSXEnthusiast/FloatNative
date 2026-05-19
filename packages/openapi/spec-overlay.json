@@ -4,14 +4,21 @@
   "components": {
     "schemas": {
       "PostMetadataModel": {
-        "_comment": "Real responses occasionally omit isFeatured on certain post types (livestream VODs in particular). Treating it as optional keeps the home feed decoder from blowing up on a single non-conforming post. See HomeFeedViewModel + LossyArray for the wider safety net.",
+        "_comment": "Real responses occasionally omit isFeatured on certain post types (livestream VODs in particular). Treating it as optional keeps the home feed decoder from blowing up on a single non-conforming post. See HomeFeedViewModel + LossyArray for the wider safety net. Also adds displayDuration: real responses return this on every post (observed on /api/v3/content/post and /creator/list). On a multi-video post like C3GeAE0LmM (videoCount=3), videoDuration is the SUM of all videos (1457s) while displayDuration is the primary video's duration (1365s). Cards should prefer displayDuration so they don't show a misleading total when posts contain multiple parts (see GH #29).",
         "required": [
           "hasVideo",
           "videoDuration",
           "hasAudio",
           "audioDuration",
           "hasPicture"
-        ]
+        ],
+        "properties": {
+          "displayDuration": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Duration in seconds of the primary video on a post, distinct from videoDuration (which sums every video attachment). Use this on cards/feeds for multi-video posts."
+          }
+        }
       },
       "SubscriptionPlanModel": {
         "_comment": "Real /api/v3/content/creator/list responses omit `interval` on every subscriptionPlan we've observed (e.g. LTT). The upstream spec marks it required, which would crash decode for any post whose creator has plans without it (= every post). Loosened here; see fixture get_api_v3_content_creator_list_ids_0_*.json captured 2026-05-08.",
@@ -62,16 +69,23 @@
         "required": ["width", "height", "path"]
       },
       "ContentPostV3Response": {
-        "_comment": "selfUserInteraction is returned by /api/v3/content/post but absent from the upstream spec. The field is null when the current user has not interacted with the post; an array of interaction strings otherwise. Documented so iOS/Android stop maintaining this field as a wrapper struct (BlogPostDetailedWithInteraction).",
+        "_comment": "selfUserInteraction is returned by /api/v3/content/post but absent from the upstream spec. The field is a single interaction string (or null) when present on the post detail response — NOT an array. Observed values: 'like' (user liked the post), 'dislike' (user disliked), null (no interaction). See fixture get_api_v3_content_post_id_C3GeAE0LmM.json captured 2026-05-19 where selfUserInteraction=\"like\". iOS wraps this in BlogPostDetailedWithInteraction (Models/ContentModels.swift) to decode a single enum.",
         "properties": {
           "selfUserInteraction": {
-            "type": "array",
+            "type": "string",
             "nullable": true,
-            "description": "Which interactions the current user has performed on this post (e.g. 'like', 'dislike'). Null when no interaction. Not in the upstream spec; observed in production.",
-            "items": {
-              "type": "string",
-              "enum": ["like", "dislike"]
-            }
+            "enum": ["like", "dislike"],
+            "description": "The interaction the current user has performed on this post. Null when no interaction. Not in the upstream spec; observed in production."
+          }
+        }
+      },
+      "CommentV3PostRequest": {
+        "_comment": "Upstream spec only documents {blogPost, text}. Real Floatplane web client also sends an optional `replying` field carrying the parent CommentModel.id when posting a reply (vs. a top-level comment). The same /api/v3/comment endpoint handles both, distinguished by the presence of `replying`. Documented here so the iOS reply UI (GH #13) can send it.",
+        "properties": {
+          "replying": {
+            "type": "string",
+            "nullable": true,
+            "description": "If posting a reply, the id of the parent CommentModel being replied to. Omit / null for a top-level comment. Not in the upstream spec; observed in production."
           }
         }
       },
@@ -125,6 +139,44 @@
   },
 
   "paths": {
+    "/api/v3/content/creator/list": {
+      "_comment": "Upstream spec switched the `fetchAfter` query param from a free-form bracket-encoded object to a typed array (items: ContentCreatorListLastItems). The new shape makes openapi-kotlin-generator emit a Retrofit @Query with List<T>, which does NOT serialize as the bracket-form fetchAfter[0][creatorId]=… that Floatplane requires (see the example URL the upstream description still cites). Reverting the param to an object schema makes codegen emit a @QueryMap, matching HomeFeedViewModel's manual key encoding. Re-evaluate when upstream fixes the param style.",
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "ids",
+            "schema": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "required": true,
+            "description": "The IDs of the creators to retrieve blog posts from.",
+            "style": "form",
+            "explode": true
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": { "type": "integer", "minimum": 1 },
+            "required": true,
+            "description": "Max blog posts to return."
+          },
+          {
+            "in": "query",
+            "name": "fetchAfter",
+            "required": false,
+            "description": "For pagination. Floatplane expects bracket-encoded keys like `fetchAfter[0][creatorId]=…&fetchAfter[0][blogPostId]=…&fetchAfter[0][moreFetchable]=…`. Codegen emits a @QueryMap; the caller serializes the cursors by hand. See HomeFeedViewModel.",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            },
+            "style": "form",
+            "explode": true
+          }
+        ]
+      }
+    },
     "/api/v3/content/history": {
       "_comment": "Endpoint exists in production but is missing from the upstream spec. Returns the most recently-watched posts (paged via offset). The blogPost embedded in each entry has a different shape from BlogPostModelV3: video/audio/picture/galleryAttachments are arrays of string IDs rather than full objects. iOS hand-models this as WatchHistoryBlogPost.",
       "get": {

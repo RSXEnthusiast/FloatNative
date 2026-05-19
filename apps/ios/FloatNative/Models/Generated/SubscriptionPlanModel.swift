@@ -19,10 +19,6 @@ public struct SubscriptionPlanModel: Codable, JSONEncodable, Hashable {
     public var priceYearly: String?
     public var currency: String
     public var logo: String?
-    // Real responses observed in production omit `interval` on subscriptionPlans
-    // attached to creators in /api/v3/content/creator/list (e.g. LTT). Marked
-    // optional via packages/openapi/spec-overlay.json so future regenerations
-    // stay loose.
     public var interval: String?
     public var featured: Bool
     public var allowGrandfatheredAccess: Bool?

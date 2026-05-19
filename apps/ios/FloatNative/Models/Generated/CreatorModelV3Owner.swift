@@ -14,15 +14,19 @@ public struct CreatorModelV3Owner: Codable, JSONEncodable, Hashable {
 
     public var id: String
     public var username: String
+    /** Badge IDs awarded to the owning user. Not in the upstream spec. */
+    public var badges: [String]?
 
-    public init(id: String, username: String) {
+    public init(id: String, username: String, badges: [String]? = nil) {
         self.id = id
         self.username = username
+        self.badges = badges
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case id
         case username
+        case badges
     }
 
     // Encodable protocol methods
@@ -31,6 +35,7 @@ public struct CreatorModelV3Owner: Codable, JSONEncodable, Hashable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(username, forKey: .username)
+        try container.encodeIfPresent(badges, forKey: .badges)
     }
 }
 

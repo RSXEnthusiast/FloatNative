@@ -27,12 +27,13 @@ import com.squareup.moshi.JsonClass
  * @param hasAudio 
  * @param audioDuration 
  * @param hasPicture 
- * @param isFeatured 
  * @param videoCount 
  * @param audioCount 
  * @param pictureCount 
  * @param hasGallery 
  * @param galleryCount 
+ * @param isFeatured 
+ * @param displayDuration Duration in seconds of the primary video on a post, distinct from videoDuration (which sums every video attachment). Use this on cards/feeds for multi-video posts.
  */
 
 
@@ -53,12 +54,6 @@ data class PostMetadataModel (
     @Json(name = "hasPicture")
     val hasPicture: kotlin.Boolean,
 
-    // isFeatured is sometimes absent on real-world responses (livestream VODs
-    // and certain post types). Marked optional via packages/openapi/spec-overlay.json
-    // so future regenerations stay loose.
-    @Json(name = "isFeatured")
-    val isFeatured: kotlin.Boolean? = null,
-
     @Json(name = "videoCount")
     val videoCount: kotlin.Int? = null,
 
@@ -72,7 +67,14 @@ data class PostMetadataModel (
     val hasGallery: kotlin.Boolean? = null,
 
     @Json(name = "galleryCount")
-    val galleryCount: kotlin.Int? = null
+    val galleryCount: kotlin.Int? = null,
+
+    @Json(name = "isFeatured")
+    val isFeatured: kotlin.Boolean? = null,
+
+    /* Duration in seconds of the primary video on a post, distinct from videoDuration (which sums every video attachment). Use this on cards/feeds for multi-video posts. */
+    @Json(name = "displayDuration")
+    val displayDuration: kotlin.Int? = null
 
 ) {
 

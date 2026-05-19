@@ -42,7 +42,7 @@ data class ImageModel (
     val path: java.net.URI,
 
     @Json(name = "childImages")
-    val childImages: kotlin.collections.List<ChildImageModel>?
+    val childImages: kotlin.collections.List<ChildImageModel>? = null
 
 ) {
 

@@ -16,17 +16,21 @@ public struct UserModel: Codable, JSONEncodable, Hashable {
     public var id: String
     public var username: String
     public var profileImage: ImageModel
+    /** Badge IDs awarded to the user. Not in the upstream spec; observed in production on comment authors. */
+    public var badges: [String]?
 
-    public init(id: String, username: String, profileImage: ImageModel) {
+    public init(id: String, username: String, profileImage: ImageModel, badges: [String]? = nil) {
         self.id = id
         self.username = username
         self.profileImage = profileImage
+        self.badges = badges
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case id
         case username
         case profileImage
+        case badges
     }
 
     // Encodable protocol methods
@@ -36,6 +40,7 @@ public struct UserModel: Codable, JSONEncodable, Hashable {
         try container.encode(id, forKey: .id)
         try container.encode(username, forKey: .username)
         try container.encode(profileImage, forKey: .profileImage)
+        try container.encodeIfPresent(badges, forKey: .badges)
     }
 }
 

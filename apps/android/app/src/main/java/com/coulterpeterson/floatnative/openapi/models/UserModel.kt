@@ -26,6 +26,7 @@ import com.squareup.moshi.JsonClass
  * @param id 
  * @param username 
  * @param profileImage 
+ * @param badges Badge IDs awarded to the user. Not in the upstream spec; observed in production on comment authors.
  */
 
 
@@ -38,7 +39,11 @@ data class UserModel (
     val username: kotlin.String,
 
     @Json(name = "profileImage")
-    val profileImage: ImageModel
+    val profileImage: ImageModel,
+
+    /* Badge IDs awarded to the user. Not in the upstream spec; observed in production on comment authors. */
+    @Json(name = "badges")
+    val badges: kotlin.collections.List<kotlin.String>? = null
 
 ) {
 

@@ -19,6 +19,10 @@ public struct ContentPostV3Response: Codable, JSONEncodable, Hashable {
         case like = "like"
         case dislike = "dislike"
     }
+    public enum SelfUserInteraction: String, Codable, CaseIterable {
+        case like = "like"
+        case dislike = "dislike"
+    }
     public var id: String
     public var guid: String
     public var title: String
@@ -48,8 +52,10 @@ public struct ContentPostV3Response: Codable, JSONEncodable, Hashable {
     public var pictureAttachments: [PictureAttachmentModel]?
     /** May be undefined when the post is locked. */
     public var galleryAttachments: [AnyCodable]?
+    /** The interaction the current user has performed on this post. Null when no interaction. Not in the upstream spec; observed in production. */
+    public var selfUserInteraction: SelfUserInteraction?
 
-    public init(id: String, guid: String, title: String, text: String, type: ModelType, channel: ChannelModel, tags: [String], attachmentOrder: [String], metadata: PostMetadataModel, releaseDate: Date, likes: Int, dislikes: Int, score: Int, comments: Int, creator: CreatorModelV2, wasReleasedSilently: Bool, thumbnail: ImageModel? = nil, isAccessible: Bool, userInteraction: [UserInteraction]?, videoAttachments: [VideoAttachmentModel]? = nil, audioAttachments: [AudioAttachmentModel]? = nil, pictureAttachments: [PictureAttachmentModel]? = nil, galleryAttachments: [AnyCodable]? = nil) {
+    public init(id: String, guid: String, title: String, text: String, type: ModelType, channel: ChannelModel, tags: [String], attachmentOrder: [String], metadata: PostMetadataModel, releaseDate: Date, likes: Int, dislikes: Int, score: Int, comments: Int, creator: CreatorModelV2, wasReleasedSilently: Bool, thumbnail: ImageModel? = nil, isAccessible: Bool, userInteraction: [UserInteraction]?, videoAttachments: [VideoAttachmentModel]? = nil, audioAttachments: [AudioAttachmentModel]? = nil, pictureAttachments: [PictureAttachmentModel]? = nil, galleryAttachments: [AnyCodable]? = nil, selfUserInteraction: SelfUserInteraction? = nil) {
         self.id = id
         self.guid = guid
         self.title = title
@@ -73,6 +79,7 @@ public struct ContentPostV3Response: Codable, JSONEncodable, Hashable {
         self.audioAttachments = audioAttachments
         self.pictureAttachments = pictureAttachments
         self.galleryAttachments = galleryAttachments
+        self.selfUserInteraction = selfUserInteraction
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -99,6 +106,7 @@ public struct ContentPostV3Response: Codable, JSONEncodable, Hashable {
         case audioAttachments
         case pictureAttachments
         case galleryAttachments
+        case selfUserInteraction
     }
 
     // Encodable protocol methods
@@ -128,6 +136,7 @@ public struct ContentPostV3Response: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(audioAttachments, forKey: .audioAttachments)
         try container.encodeIfPresent(pictureAttachments, forKey: .pictureAttachments)
         try container.encodeIfPresent(galleryAttachments, forKey: .galleryAttachments)
+        try container.encodeIfPresent(selfUserInteraction, forKey: .selfUserInteraction)
     }
 }
 

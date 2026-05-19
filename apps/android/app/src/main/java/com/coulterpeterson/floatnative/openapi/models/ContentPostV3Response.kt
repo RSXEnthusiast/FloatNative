@@ -52,6 +52,7 @@ import com.squareup.moshi.JsonClass
  * @param audioAttachments May be undefined when the post is locked.
  * @param pictureAttachments May be undefined when the post is locked.
  * @param galleryAttachments May be undefined when the post is locked.
+ * @param selfUserInteraction The interaction the current user has performed on this post. Null when no interaction. Not in the upstream spec; observed in production.
  */
 
 
@@ -130,7 +131,11 @@ data class ContentPostV3Response (
 
     /* May be undefined when the post is locked. */
     @Json(name = "galleryAttachments")
-    val galleryAttachments: kotlin.collections.List<kotlin.Any>? = null
+    val galleryAttachments: kotlin.collections.List<kotlin.Any>? = null,
+
+    /* The interaction the current user has performed on this post. Null when no interaction. Not in the upstream spec; observed in production. */
+    @Json(name = "selfUserInteraction")
+    val selfUserInteraction: ContentPostV3Response.SelfUserInteraction? = null
 
 ) {
 
@@ -150,6 +155,16 @@ data class ContentPostV3Response (
      */
     @JsonClass(generateAdapter = false)
     enum class UserInteraction(val value: kotlin.String) {
+        @Json(name = "like") like("like"),
+        @Json(name = "dislike") dislike("dislike");
+    }
+    /**
+     * The interaction the current user has performed on this post. Null when no interaction. Not in the upstream spec; observed in production.
+     *
+     * Values: like,dislike
+     */
+    @JsonClass(generateAdapter = false)
+    enum class SelfUserInteraction(val value: kotlin.String) {
         @Json(name = "like") like("like"),
         @Json(name = "dislike") dislike("dislike");
     }

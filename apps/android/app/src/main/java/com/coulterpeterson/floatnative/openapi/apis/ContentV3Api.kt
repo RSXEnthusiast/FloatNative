@@ -7,7 +7,6 @@ import okhttp3.RequestBody
 import com.squareup.moshi.Json
 
 import com.coulterpeterson.floatnative.openapi.models.BlogPostModelV3
-import com.coulterpeterson.floatnative.openapi.models.ContentCreatorListLastItems
 import com.coulterpeterson.floatnative.openapi.models.ContentCreatorListV3Response
 import com.coulterpeterson.floatnative.openapi.models.ContentLikeV3Request
 import com.coulterpeterson.floatnative.openapi.models.ContentPictureV3Response
@@ -17,6 +16,7 @@ import com.coulterpeterson.floatnative.openapi.models.ErrorModel
 import com.coulterpeterson.floatnative.openapi.models.GetProgressRequest
 import com.coulterpeterson.floatnative.openapi.models.GetProgressResponseInner
 import com.coulterpeterson.floatnative.openapi.models.UpdateProgressRequest
+import com.coulterpeterson.floatnative.openapi.models.WatchHistoryEntry
 
 interface ContentV3Api {
     /**
@@ -95,6 +95,19 @@ interface ContentV3Api {
     suspend fun getContent(): Response<kotlin.Any>
 
     /**
+     * GET api/v3/content/history
+     * Get watch history
+     * Returns the authenticated user&#39;s watch history, paginated by offset.
+     * Responses:
+     *  - 200: OK - History entries returned
+     *
+     * @param offset How many entries to skip (for pagination). (optional)
+     * @return [kotlin.collections.List<WatchHistoryEntry>]
+     */
+    @GET("api/v3/content/history")
+    suspend fun getContentHistory(@Query("offset") offset: kotlin.Int? = null): Response<kotlin.collections.List<WatchHistoryEntry>>
+
+    /**
      * GET api/v3/content/tags
      * Get Content Tags
      * Retrieve all tags and the number of times the tags have been used for the specified creator(s).
@@ -168,9 +181,9 @@ interface ContentV3Api {
      *  - 429: Too Many Requests - The resource was requested too many times
      *  - 0: Unexpected response code
      *
-     * @param ids The GUID(s) of the creator(s) to retrieve posts from.
-     * @param limit The maximum number of posts to retrieve.
-     * @param fetchAfter For pagination, this is used to determine which posts to skip. There should be one &#x60;fetchAfter&#x60; object for each creator in &#x60;ids&#x60;. The &#x60;moreFetchable&#x60; in the request, and all of the data, comes from the &#x60;ContentCreatorListV3Response&#x60;. (optional)
+     * @param ids The IDs of the creators to retrieve blog posts from.
+     * @param limit Max blog posts to return.
+     * @param fetchAfter For pagination. Floatplane expects bracket-encoded keys like &#x60;fetchAfter[0][creatorId]&#x3D;…&amp;fetchAfter[0][blogPostId]&#x3D;…&amp;fetchAfter[0][moreFetchable]&#x3D;…&#x60;. Codegen emits a @QueryMap; the caller serializes the cursors by hand. See HomeFeedViewModel. (optional)
      * @return [ContentCreatorListV3Response]
      */
     @GET("api/v3/content/creator/list")

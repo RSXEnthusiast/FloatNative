@@ -24,6 +24,7 @@ import com.squareup.moshi.JsonClass
  *
  * @param id 
  * @param username 
+ * @param badges Badge IDs awarded to the owning user. Not in the upstream spec.
  */
 
 
@@ -33,7 +34,11 @@ data class CreatorModelV3Owner (
     val id: kotlin.String,
 
     @Json(name = "username")
-    val username: kotlin.String
+    val username: kotlin.String,
+
+    /* Badge IDs awarded to the owning user. Not in the upstream spec. */
+    @Json(name = "badges")
+    val badges: kotlin.collections.List<kotlin.String>? = null
 
 ) {
 

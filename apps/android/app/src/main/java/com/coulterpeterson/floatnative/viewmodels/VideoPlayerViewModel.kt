@@ -704,23 +704,17 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
             replyingToComment = null // Clear reply state
         )
         
-        // Fire and forget API call
+        // Fire and forget API call. Both top-level comments and replies go to
+        // the same /api/v3/comment endpoint; the `replying` field on the
+        // request body is what distinguishes a reply (see spec-overlay.json).
         viewModelScope.launch {
             try {
-                if (replyingTo != null) {
-                    val request = CommentV3ReplyRequest(
-                        blogPost = currentState.blogPost.id,
-                        text = text,
-                        replyTo = replyingTo.id
-                    )
-                    FloatplaneApi.commentV3.postReply(request)
-                } else {
-                    val request = CommentV3PostRequest(
-                        blogPost = currentState.blogPost.id,
-                        text = text
-                    )
-                    FloatplaneApi.commentV3.postComment(request)
-                }
+                val request = CommentV3PostRequest(
+                    blogPost = currentState.blogPost.id,
+                    text = text,
+                    replying = replyingTo?.id
+                )
+                FloatplaneApi.commentV3.postComment(request)
             } catch (e: Exception) {
                 // Ignore failure as requested
             }

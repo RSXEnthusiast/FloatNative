@@ -113,6 +113,29 @@ for override in "${HAND_WRITTEN_OVERRIDES[@]}"; do
 done
 rm -rf "$OVERRIDES_BACKUP"
 
+# Post-processing: turn `@Query("fetchAfter") fetchAfter: Map<…,…>? = null` into
+# `@QueryMap fetchAfter: Map<…,…> = emptyMap()` so Retrofit serializes each map
+# entry as its own query parameter (Floatplane expects bracket-encoded keys
+# like fetchAfter[0][creatorId]=…). The OpenAPI Kotlin generator emits @Query
+# even for type:object params; this rewrite is what makes HomeFeedViewModel's
+# manual key encoding land as bracket-form query strings in the request URL.
+# See spec-overlay.json /api/v3/content/creator/list for context.
+CONTENT_API="$TARGET_PACKAGE_DIR/apis/ContentV3Api.kt"
+if [ -f "$CONTENT_API" ] && grep -q '@Query("fetchAfter") fetchAfter: kotlin.collections.Map' "$CONTENT_API"; then
+    sed -i '' \
+        -e 's|@Query("fetchAfter") fetchAfter: kotlin.collections.Map<kotlin.String, kotlin.String>? = null|@QueryMap fetchAfter: kotlin.collections.Map<kotlin.String, kotlin.String> = kotlin.collections.emptyMap()|g' \
+        "$CONTENT_API"
+    # Ensure the @QueryMap symbol is in scope. retrofit2.http.* import is
+    # already present in the generated file, but @QueryMap specifically may not
+    # be. Add it idempotently next to the existing retrofit2 imports.
+    if ! grep -q 'import retrofit2.http.QueryMap' "$CONTENT_API"; then
+        sed -i '' '/^import retrofit2.http.Query$/a\
+import retrofit2.http.QueryMap
+' "$CONTENT_API"
+    fi
+    echo "✅ Rewrote fetchAfter param to @QueryMap in ContentV3Api.kt"
+fi
+
 TOTAL_FILES=$(find "$TARGET_PACKAGE_DIR" -name "*.kt" | wc -l | tr -d ' ')
 
 echo ""

@@ -17,7 +17,7 @@ public struct ImageModel: Codable, JSONEncodable, Hashable {
     public var path: String
     public var childImages: [ChildImageModel]?
 
-    public init(width: Int, height: Int, path: String, childImages: [ChildImageModel]?) {
+    public init(width: Int, height: Int, path: String, childImages: [ChildImageModel]? = nil) {
         self.width = width
         self.height = height
         self.path = path
@@ -38,7 +38,7 @@ public struct ImageModel: Codable, JSONEncodable, Hashable {
         try container.encode(width, forKey: .width)
         try container.encode(height, forKey: .height)
         try container.encode(path, forKey: .path)
-        try container.encode(childImages, forKey: .childImages)
+        try container.encodeIfPresent(childImages, forKey: .childImages)
     }
 }
 

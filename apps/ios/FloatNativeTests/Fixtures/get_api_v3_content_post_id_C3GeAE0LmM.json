@@ -1,0 +1,422 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/api/v3/content/post?id=C3GeAE0LmM"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "C3GeAE0LmM",
+      "guid": "C3GeAE0LmM",
+      "title": "Fixing My Employee’s House For a Day - The Setup Doctor (SPONSORED)",
+      "text": "<p>Click the link below to get an extra 6% off your Vernal desk.</p><p><br /></p><p>US: <a href=\"https://bit.ly/4vOLHBs\">https://bit.ly/4vOLHBs</a></p><p>UK: <a href=\"https://bit.ly/4ddpANO\">https://bit.ly/4ddpANO</a></p><p>DE: <a href=\"https://bit.ly/42zuYEP\">https://bit.ly/42zuYEP</a></p><p><br /></p><p>LTT production hero Reece's setup is suffering from terrible cable management and a crappy desk. The Setup Doctor is in! We transformed his chaotic gaming and streaming space, shoe room and more - upgrading him with the sturdy Vernal Core3 L-shaped Standing Desk and custom accessories. Plus, we check out his unique hobby.</p>",
+      "textMarkdown": "Click the link below to get an extra 6% off your Vernal desk.\n\n  \nUS: <https://bit.ly/4vOLHBs>\n\nUK: <https://bit.ly/4ddpANO>\n\nDE: <https://bit.ly/42zuYEP>\n\n  \nLTT production hero Reece's setup is suffering from terrible cable management and a crappy desk. The Setup Doctor is in! We transformed his chaotic gaming and streaming space, shoe room and more - upgrading him with the sturdy Vernal Core3 L-shaped Standing Desk and custom accessories. Plus, we check out his unique hobby.",
+      "type": "blogPost",
+      "channel": {
+        "id": "63fe42c309e691e4e36de93d",
+        "creator": "59f94c0bdd241b70349eb72b",
+        "title": "Linus Tech Tips",
+        "urlname": "main",
+        "about": "# We're LinusTechTips\nWe make videos and stuff, cool eh?",
+        "order": 0,
+        "cover": null,
+        "card": null,
+        "icon": {
+          "width": 600,
+          "height": 600,
+          "path": "https://pbs.floatplane.com/creator_icons/59f94c0bdd241b70349eb72b/770551996990709_1551249357205.jpeg",
+          "childImages": [
+            {
+              "width": 250,
+              "height": 250,
+              "path": "https://pbs.floatplane.com/creator_icons/59f94c0bdd241b70349eb72b/770551996990709_1551249357205_250x250.jpeg"
+            },
+            {
+              "width": 100,
+              "height": 100,
+              "path": "https://pbs.floatplane.com/creator_icons/59f94c0bdd241b70349eb72b/770551996990709_1551249357205_100x100.jpeg"
+            }
+          ]
+        }
+      },
+      "tags": [],
+      "attachmentOrder": [
+        "AD7ulnBvCw",
+        "ll5sd57hR5",
+        "i2gFSMfpBY"
+      ],
+      "releaseDate": "2026-05-16T01:55:00.068Z",
+      "likes": 537,
+      "dislikes": 0,
+      "score": 537,
+      "comments": 72,
+      "creator": {
+        "id": "59f94c0bdd241b70349eb72b",
+        "owner": "59f94c0bdd241b70349eb723",
+        "title": "LinusTechTips",
+        "urlname": "linustechtips",
+        "description": "We make entertaining videos about technology, including tech reviews, showcases, and other content.",
+        "about": "# We're LinusTechTips\nWe make videos and stuff, cool eh?",
+        "category": "59f94c0bdd241b70349eb727",
+        "cover": null,
+        "icon": {
+          "width": 600,
+          "height": 600,
+          "path": "https://pbs.floatplane.com/creator_icons/59f94c0bdd241b70349eb72b/770551996990709_1551249357205.jpeg",
+          "childImages": [
+            {
+              "width": 250,
+              "height": 250,
+              "path": "https://pbs.floatplane.com/creator_icons/59f94c0bdd241b70349eb72b/770551996990709_1551249357205_250x250.jpeg"
+            },
+            {
+              "width": 100,
+              "height": 100,
+              "path": "https://pbs.floatplane.com/creator_icons/59f94c0bdd241b70349eb72b/770551996990709_1551249357205_100x100.jpeg"
+            }
+          ]
+        },
+        "card": null,
+        "liveStream": null,
+        "subscriptionPlans": null,
+        "discoverable": true,
+        "visibility": "public",
+        "subscriberCountDisplay": "total",
+        "incomeDisplay": false,
+        "defaultChannel": "6413623f5b12cca228a28e78"
+      },
+      "wasReleasedSilently": false,
+      "metadata": {
+        "hasVideo": true,
+        "videoCount": 3,
+        "videoDuration": 1457,
+        "hasAudio": false,
+        "audioCount": 0,
+        "audioDuration": 0,
+        "hasPicture": false,
+        "pictureCount": 0,
+        "isFeatured": false,
+        "displayDuration": 1365,
+        "hasGallery": false,
+        "galleryCount": 0
+      },
+      "galleryAttachments": [],
+      "selfUserInteraction": "like",
+      "thumbnail": {
+        "width": 1920,
+        "height": 1080,
+        "path": "https://pbs.floatplane.com/video_thumbnails/C3GeAE0LmM/567624890214424_1778872872963.jpeg",
+        "childImages": [
+          {
+            "width": 400,
+            "height": 225,
+            "path": "https://pbs.floatplane.com/video_thumbnails/C3GeAE0LmM/567624890214424_1778872872963_400x225.jpeg"
+          },
+          {
+            "width": 1920,
+            "height": 1080,
+            "path": "https://pbs.floatplane.com/video_thumbnails/C3GeAE0LmM/567624890214424_1778872872963_1920x1080.jpeg"
+          },
+          {
+            "width": 1200,
+            "height": 675,
+            "path": "https://pbs.floatplane.com/video_thumbnails/C3GeAE0LmM/567624890214424_1778872872963_1200x675.jpeg"
+          }
+        ]
+      },
+      "isAccessible": true,
+      "userInteraction": [
+        "like"
+      ],
+      "videoAttachments": [
+        {
+          "id": "AD7ulnBvCw",
+          "guid": "AD7ulnBvCw",
+          "title": "It Took FOREVER to Clean His Setup....",
+          "type": "video",
+          "description": "",
+          "releaseDate": null,
+          "duration": 1365,
+          "creator": "59f94c0bdd241b70349eb72b",
+          "likes": 0,
+          "dislikes": 0,
+          "score": 0,
+          "isProcessing": false,
+          "primaryBlogPost": "C3GeAE0LmM",
+          "levels": [
+            {
+              "name": "360",
+              "width": 640,
+              "height": 360,
+              "label": "360p",
+              "order": 0
+            },
+            {
+              "name": "480",
+              "width": 854,
+              "height": 480,
+              "label": "480p",
+              "order": 1
+            },
+            {
+              "name": "720",
+              "width": 1280,
+              "height": 720,
+              "label": "720p",
+              "order": 2
+            },
+            {
+              "name": "1080",
+              "width": 1920,
+              "height": 1080,
+              "label": "1080p",
+              "order": 4
+            },
+            {
+              "name": "2160",
+              "width": 3840,
+              "height": 2160,
+              "label": "4K",
+              "order": 7
+            }
+          ],
+          "textTracks": [
+            {
+              "id": "6a0772a33153ca44823fae8b",
+              "src": "https://941d59f1900d0a09025413971374845d.r2.cloudflarestorage.com/prod-texttrack/text_tracks/AD7ulnBvCw/448754237701475_1778874442945.vtt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=848bccaff51d5141475de2d2a180f979%2F20260519%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260519T150344Z&X-Amz-Expires=900&X-Amz-Signature=6764bd4ace5677dc776e7dd85715cb6264bcd68cbca9364d73ce1bc838bb3161&X-Amz-SignedHeaders=host&response-expires=Tue%2C%2019%20May%202026%2015%3A03%3A45%20GMT&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+              "kind": "captions",
+              "language": "en",
+              "generated": true,
+              "processing": false
+            }
+          ],
+          "selfUserInteraction": null,
+          "thumbnail": {
+            "width": 1920,
+            "height": 1080,
+            "path": "https://pbs.floatplane.com/content_thumbnails/AD7ulnBvCw/34245382489242_1778873094423.jpeg",
+            "childImages": [
+              {
+                "width": 1200,
+                "height": 675,
+                "path": "https://pbs.floatplane.com/content_thumbnails/AD7ulnBvCw/34245382489242_1778873094423_1200x675.jpeg"
+              },
+              {
+                "width": 1920,
+                "height": 1080,
+                "path": "https://pbs.floatplane.com/content_thumbnails/AD7ulnBvCw/34245382489242_1778873094423_1920x1080.jpeg"
+              },
+              {
+                "width": 400,
+                "height": 225,
+                "path": "https://pbs.floatplane.com/content_thumbnails/AD7ulnBvCw/34245382489242_1778873094423_400x225.jpeg"
+              }
+            ]
+          },
+          "isAccessible": true,
+          "blogPosts": [
+            "C3GeAE0LmM"
+          ],
+          "timelineSprite": {
+            "width": 4960,
+            "height": 1980,
+            "path": "https://pbs.floatplane.com/timeline_sprite/AD7ulnBvCw/98793706870265_1778873939951.jpeg",
+            "childImages": []
+          }
+        },
+        {
+          "id": "i2gFSMfpBY",
+          "guid": "i2gFSMfpBY",
+          "title": "2026-05 boot dev CSP END v2.mp4",
+          "type": "video",
+          "description": "",
+          "releaseDate": null,
+          "duration": 74,
+          "creator": "59f94c0bdd241b70349eb72b",
+          "likes": 0,
+          "dislikes": 0,
+          "score": 0,
+          "isProcessing": false,
+          "primaryBlogPost": "C3GeAE0LmM",
+          "levels": [
+            {
+              "name": "360",
+              "width": 640,
+              "height": 360,
+              "label": "360p",
+              "order": 0
+            },
+            {
+              "name": "480",
+              "width": 854,
+              "height": 480,
+              "label": "480p",
+              "order": 1
+            },
+            {
+              "name": "720",
+              "width": 1280,
+              "height": 720,
+              "label": "720p",
+              "order": 2
+            },
+            {
+              "name": "1080",
+              "width": 1920,
+              "height": 1080,
+              "label": "1080p",
+              "order": 4
+            },
+            {
+              "name": "2160",
+              "width": 3840,
+              "height": 2160,
+              "label": "4K",
+              "order": 7
+            }
+          ],
+          "textTracks": [
+            {
+              "id": "6a0789fa71fc63249456a9a1",
+              "src": "https://941d59f1900d0a09025413971374845d.r2.cloudflarestorage.com/prod-texttrack/text_tracks/i2gFSMfpBY/931826302967395_1778879679608.vtt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=848bccaff51d5141475de2d2a180f979%2F20260519%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260519T150344Z&X-Amz-Expires=900&X-Amz-Signature=4f1b308057c3c553c2cd7a9470af3c6ed48a4b6e060b67bd647193fb9ddfd3ec&X-Amz-SignedHeaders=host&response-expires=Tue%2C%2019%20May%202026%2015%3A03%3A45%20GMT&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+              "kind": "captions",
+              "language": "en",
+              "generated": true,
+              "processing": false
+            }
+          ],
+          "selfUserInteraction": null,
+          "thumbnail": {
+            "width": 1920,
+            "height": 1080,
+            "path": "https://pbs.floatplane.com/content_thumbnails/i2gFSMfpBY/15427228294059_1778879065603.jpeg",
+            "childImages": [
+              {
+                "width": 400,
+                "height": 225,
+                "path": "https://pbs.floatplane.com/content_thumbnails/i2gFSMfpBY/15427228294059_1778879065603_400x225.jpeg"
+              },
+              {
+                "width": 1200,
+                "height": 675,
+                "path": "https://pbs.floatplane.com/content_thumbnails/i2gFSMfpBY/15427228294059_1778879065603_1200x675.jpeg"
+              },
+              {
+                "width": 1920,
+                "height": 1080,
+                "path": "https://pbs.floatplane.com/content_thumbnails/i2gFSMfpBY/15427228294059_1778879065603_1920x1080.jpeg"
+              }
+            ]
+          },
+          "isAccessible": true,
+          "blogPosts": [
+            "C3GeAE0LmM"
+          ],
+          "timelineSprite": {
+            "width": 3040,
+            "height": 180,
+            "path": "https://pbs.floatplane.com/timeline_sprite/i2gFSMfpBY/241102231802990_1778879659572.jpeg",
+            "childImages": []
+          }
+        },
+        {
+          "id": "ll5sd57hR5",
+          "guid": "ll5sd57hR5",
+          "title": "2026-05 Boot dot Dev PRE v3.mp4",
+          "type": "video",
+          "description": "",
+          "releaseDate": null,
+          "duration": 18,
+          "creator": "59f94c0bdd241b70349eb72b",
+          "likes": 0,
+          "dislikes": 0,
+          "score": 0,
+          "isProcessing": false,
+          "primaryBlogPost": "C3GeAE0LmM",
+          "levels": [
+            {
+              "name": "360",
+              "width": 640,
+              "height": 360,
+              "label": "360p",
+              "order": 0
+            },
+            {
+              "name": "480",
+              "width": 854,
+              "height": 480,
+              "label": "480p",
+              "order": 1
+            },
+            {
+              "name": "720",
+              "width": 1280,
+              "height": 720,
+              "label": "720p",
+              "order": 2
+            },
+            {
+              "name": "1080",
+              "width": 1920,
+              "height": 1080,
+              "label": "1080p",
+              "order": 4
+            },
+            {
+              "name": "2160",
+              "width": 3840,
+              "height": 2160,
+              "label": "4K",
+              "order": 7
+            }
+          ],
+          "textTracks": [
+            {
+              "id": "6a0789be3153ca6eec3fae9d",
+              "src": "https://941d59f1900d0a09025413971374845d.r2.cloudflarestorage.com/prod-texttrack/text_tracks/ll5sd57hR5/278608337977591_1778879119811.vtt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=848bccaff51d5141475de2d2a180f979%2F20260519%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260519T150344Z&X-Amz-Expires=900&X-Amz-Signature=20c01f130a9a16680bb3ace210acda5491cedc97abdfd7cd65f2b8ac6a95df3c&X-Amz-SignedHeaders=host&response-expires=Tue%2C%2019%20May%202026%2015%3A03%3A45%20GMT&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+              "kind": "captions",
+              "language": "en",
+              "generated": true,
+              "processing": false
+            }
+          ],
+          "selfUserInteraction": null,
+          "thumbnail": {
+            "width": 1920,
+            "height": 1080,
+            "path": "https://pbs.floatplane.com/content_thumbnails/ll5sd57hR5/665371398813588_1778878957314.jpeg",
+            "childImages": [
+              {
+                "width": 1200,
+                "height": 675,
+                "path": "https://pbs.floatplane.com/content_thumbnails/ll5sd57hR5/665371398813588_1778878957314_1200x675.jpeg"
+              },
+              {
+                "width": 400,
+                "height": 225,
+                "path": "https://pbs.floatplane.com/content_thumbnails/ll5sd57hR5/665371398813588_1778878957314_400x225.jpeg"
+              },
+              {
+                "width": 1920,
+                "height": 1080,
+                "path": "https://pbs.floatplane.com/content_thumbnails/ll5sd57hR5/665371398813588_1778878957314_1920x1080.jpeg"
+              }
+            ]
+          },
+          "isAccessible": true,
+          "blogPosts": [
+            "C3GeAE0LmM"
+          ],
+          "timelineSprite": {
+            "width": 800,
+            "height": 180,
+            "path": "https://pbs.floatplane.com/timeline_sprite/ll5sd57hR5/400894261444783_1778879096877.jpeg",
+            "childImages": []
+          }
+        }
+      ],
+      "audioAttachments": [],
+      "pictureAttachments": []
+    }
+  }
+}

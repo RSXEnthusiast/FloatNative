@@ -24,6 +24,7 @@ import com.squareup.moshi.JsonClass
  *
  * @param blogPost The GUID of the blogPost the comment should be posted to.
  * @param text The text of the comment being posted.
+ * @param replying If posting a reply, the id of the parent CommentModel being replied to. Omit / null for a top-level comment. Not in the upstream spec; observed in production.
  */
 
 
@@ -35,7 +36,11 @@ data class CommentV3PostRequest (
 
     /* The text of the comment being posted. */
     @Json(name = "text")
-    val text: kotlin.String
+    val text: kotlin.String,
+
+    /* If posting a reply, the id of the parent CommentModel being replied to. Omit / null for a top-level comment. Not in the upstream spec; observed in production. */
+    @Json(name = "replying")
+    val replying: kotlin.String? = null
 
 ) {
 
