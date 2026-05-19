@@ -385,8 +385,10 @@ struct VideoPlayerTvosView: View {
                     // legacyTabView (iOS 17 path) routes iPad through this
                     // tvOS-styled view, so the same orphan-audio bug from
                     // GH #40 applies here. Tear down unless PiP is keeping
-                    // the session alive.
-                    if !playerManager.hasPIPSession {
+                    // the session alive OR we're mid-fullscreen-transition
+                    // (rotation to landscape) — see VideoPlayerView for the
+                    // same guard.
+                    if !playerManager.hasPIPSession && !playerManager.isInFullScreenTransition {
                         playerManager.pause()
                         playerManager.reset()
                         playerManager.playerViewController = nil

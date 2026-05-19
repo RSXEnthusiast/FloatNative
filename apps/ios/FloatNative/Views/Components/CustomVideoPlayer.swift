@@ -330,6 +330,28 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
         #if !os(tvOS)
         // MARK: - Fullscreen transitions
 
+        // Set the in-fullscreen flag *before* SwiftUI sees any layout
+        // change. When the host view's `.onDisappear` fires later (some
+        // iOS versions tear down the SwiftUI tree mid-fullscreen) the
+        // GH #40 teardown logic checks this flag and bails out, preventing
+        // the AVPlayer from being reset out from under the modal — which
+        // was producing the black screen + PlayerRemoteXPC -12860.
+        func playerViewController(
+            _ playerViewController: AVPlayerViewController,
+            willBeginFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator
+        ) {
+            print("🎬 [Fullscreen] willBegin")
+            MainActor.assumeIsolated {
+                AVPlayerManager.shared.isInFullScreenTransition = true
+            }
+            coordinator.animate(alongsideTransition: nil) { _ in
+                MainActor.assumeIsolated {
+                    AVPlayerManager.shared.isInFullScreenTransition = false
+                    print("🎬 [Fullscreen] enter complete")
+                }
+            }
+        }
+
         // AVPlayerViewController often pauses the player when leaving
         // fullscreen. If the user was playing when they exited, restart
         // playback after the transition. Also force the device back to
@@ -340,10 +362,14 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
             _ playerViewController: AVPlayerViewController,
             willEndFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator
         ) {
+            print("🎬 [Fullscreen] willEnd")
             // Capture state synchronously — we're already on the main thread
             // when UIKit fires this delegate, but the compiler needs us to
             // tell it explicitly that AVPlayerManager touches are main-isolated.
             let wasPlaying = MainActor.assumeIsolated { AVPlayerManager.shared.isPlaying }
+            MainActor.assumeIsolated {
+                AVPlayerManager.shared.isInFullScreenTransition = true
+            }
 
             coordinator.animate(alongsideTransition: nil) { _ in
                 MainActor.assumeIsolated {
@@ -351,6 +377,8 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
                         AVPlayerManager.shared.play()
                     }
                     AVPlayerManager.shared.forcePortrait()
+                    AVPlayerManager.shared.isInFullScreenTransition = false
+                    print("🎬 [Fullscreen] exit complete")
                 }
             }
         }

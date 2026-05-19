@@ -86,6 +86,14 @@ class AVPlayerManager: NSObject, ObservableObject {
     var playerViewController: AVPlayerViewController?
     var playerViewControllerDelegate: NSObject? // Stores the Coordinator
 
+    /// True while AVPlayerViewController is mid-transition into or out of its
+    /// own native fullscreen presentation. Used by VideoPlayerView.onDisappear
+    /// to skip the singleton-player teardown: during fullscreen the host
+    /// SwiftUI view sometimes fires .onDisappear, but the player is still
+    /// being shown by AVPlayerViewController's modal — resetting it would
+    /// black the screen with a PlayerRemoteXPC -12860 error.
+    var isInFullScreenTransition: Bool = false
+
     // MARK: - Current Video Info
 
     private(set) var currentVideoId: String?
@@ -756,7 +764,11 @@ class AVPlayerManager: NSObject, ObservableObject {
     // MARK: - Fullscreen Control
 
     func enterFullScreen(animated: Bool = true) {
-        guard let playerViewController = playerViewController else { return }
+        guard let playerViewController = playerViewController else {
+            print("🎬 [Fullscreen] enterFullScreen: no playerViewController")
+            return
+        }
+        print("🎬 [Fullscreen] enterFullScreen invoked")
         let selector = NSSelectorFromString("enterFullScreenAnimated:completionHandler:")
         if playerViewController.responds(to: selector) {
             playerViewController.perform(selector, with: animated, with: nil)
@@ -764,7 +776,11 @@ class AVPlayerManager: NSObject, ObservableObject {
     }
 
     func exitFullScreen(animated: Bool = true) {
-        guard let playerViewController = playerViewController else { return }
+        guard let playerViewController = playerViewController else {
+            print("🎬 [Fullscreen] exitFullScreen: no playerViewController")
+            return
+        }
+        print("🎬 [Fullscreen] exitFullScreen invoked")
         let selector = NSSelectorFromString("exitFullScreenAnimated:completionHandler:")
         if playerViewController.responds(to: selector) {
             playerViewController.perform(selector, with: animated, with: nil)

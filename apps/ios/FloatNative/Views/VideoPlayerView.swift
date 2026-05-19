@@ -186,16 +186,20 @@ struct VideoPlayerView: View {
                 }
             }
 
-            // When AVPlayerViewController enters its own native fullscreen, the
-            // SwiftUI host view stays in the hierarchy and `.onDisappear` does
-            // not fire — so reaching this point means the player view is truly
-            // going away (NavigationStack pop, sheet dismiss, iPad swipe-back).
-            // The only "transition" we want to preserve playback for is PiP,
-            // because the system continues that session and the user can tap
-            // the PiP window to return. Without this teardown, the iPad
-            // swipe-back left the singleton player alive with no UI surface
-            // to bring it back (GH #40).
-            if !playerManager.hasPIPSession {
+            // Three reasons .onDisappear fires:
+            //   1. PiP started — keep the player; user can return via the PiP window.
+            //   2. AVPlayerViewController entered/left fullscreen — keep the
+            //      player; it's still being shown by the modal that's covering
+            //      this host. Tearing down here is what caused the black screen
+            //      + PlayerRemoteXPC -12860 when rotating to landscape after
+            //      GH #40's aggressive teardown landed.
+            //   3. View truly going away (NavigationStack pop, iPad swipe-back).
+            //      In this case we DO tear down so audio doesn't orphan (GH #40).
+            let inPip = playerManager.hasPIPSession
+            let inFullscreen = playerManager.isInFullScreenTransition
+            print("🎬 [VideoPlayerView] onDisappear inPip=\(inPip) inFullscreen=\(inFullscreen)")
+            if !inPip && !inFullscreen {
+                print("🎬 [VideoPlayerView] tearing down player")
                 playerManager.pause()
                 playerManager.reset()
                 playerManager.playerViewController = nil
