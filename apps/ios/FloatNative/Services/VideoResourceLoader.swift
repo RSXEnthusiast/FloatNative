@@ -209,18 +209,12 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
             throw URLError(.resourceUnavailable)
         }
 
-        // Re-route the upstream variant URL through our floatnative://
-        // interceptor so DPoP + key-rewrite continues to work.
-        var variantComponents = URLComponents(url: variantURL, resolvingAgainstBaseURL: false)
-        variantComponents?.scheme = customScheme
-        guard let interceptedVariantURL = variantComponents?.url else {
-            throw URLError(.badURL)
-        }
+        var lines: [String] = ["#EXTM3U", "#EXT-X-VERSION:6", "#EXT-X-INDEPENDENT-SEGMENTS"]
 
-        var lines: [String] = ["#EXTM3U", "#EXT-X-VERSION:3"]
-
-        // Each text track becomes a SUBTITLES rendition pointing at a
-        // synthetic per-track playlist.
+        // Each text track becomes a SUBTITLES rendition pointing at a per-
+        // track playlist. URI is relative to the master so AVPlayer resolves
+        // it against `floatnative://__synth__/master.m3u8` → the loader's
+        // synthetic subs path.
         for (i, track) in pendingTextTracks.enumerated() {
             let trackId = "subs\(i)"
             let attrs: [String] = [
@@ -231,20 +225,20 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
                 "AUTOSELECT=\(track.isDefault ? "YES" : "NO")",
                 "DEFAULT=\(track.isDefault ? "YES" : "NO")",
                 "FORCED=NO",
-                "URI=\"floatnative://__synth__/\(trackId)/subs.m3u8\""
+                "URI=\"\(trackId)/subs.m3u8\""
             ]
             lines.append("#EXT-X-MEDIA:" + attrs.joined(separator: ","))
         }
 
-        // CODECS + RESOLUTION are strongly recommended by the HLS authoring
-        // spec. The upstream Floatplane variant we point at is H.264 high +
-        // AAC-LC (avc1.640028, mp4a.40.2) at 1080p — values cribbed from the
-        // delivery-info payload. Adding them keeps AVPlayer's strict parser
-        // happy. SUBTITLES attr ties the rendition group to the variant.
+        // Variant URI is the upstream HTTPS URL directly — Floatplane's
+        // variant URL embeds a query-string token, so it's pre-authenticated
+        // and AVPlayer can fetch it without going through our loader. This
+        // avoids the AVPlayer HLS parser quirk where master playlists with
+        // non-http variant URIs are rejected as InvalidPlaylist (-12881).
         let subtitlesAttr = pendingTextTracks.isEmpty ? "" : ",SUBTITLES=\"subs\""
         let streamInf = "#EXT-X-STREAM-INF:BANDWIDTH=4000000,RESOLUTION=1920x1080,CODECS=\"avc1.640028,mp4a.40.2\"\(subtitlesAttr)"
         lines.append(streamInf)
-        lines.append(interceptedVariantURL.absoluteString)
+        lines.append(variantURL.absoluteString)
 
         let manifest = lines.joined(separator: "\n") + "\n"
         log.debug("synthetic master playlist:\n\(manifest, privacy: .public)")
@@ -288,7 +282,8 @@ class VideoResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
                 actualDur = Double(segDuration)
             }
             lines.append("#EXTINF:\(String(format: "%.3f", actualDur)),")
-            lines.append("floatnative://__synth__/\(trackId)/seg-\(i).vtt")
+            // Relative URI — AVPlayer resolves against the subs.m3u8 URL.
+            lines.append("seg-\(i).vtt")
         }
         lines.append("#EXT-X-ENDLIST")
         let manifest = lines.joined(separator: "\n") + "\n"
