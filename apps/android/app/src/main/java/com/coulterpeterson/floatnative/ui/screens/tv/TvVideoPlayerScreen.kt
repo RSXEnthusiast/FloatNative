@@ -75,6 +75,21 @@ fun TvVideoPlayerScreen(
         viewModel.loadVideo(videoId)
     }
 
+    // The ViewModel emits a PlayerAction.Seek when it loads the saved
+    // resume position from /api/v3/content/video/{id}. The phone screen
+    // listens for this; the TV screen didn't, so resuming from history
+    // (or any other entry point) silently started from 0 (GH #20).
+    LaunchedEffect(Unit) {
+        viewModel.playerAction.collect { action ->
+            when (action) {
+                is com.coulterpeterson.floatnative.viewmodels.PlayerAction.Seek -> {
+                    exoPlayer.seekTo(action.position)
+                    exoPlayer.play()
+                }
+            }
+        }
+    }
+
     // Initial Seek for Cast Resume
     var hasPerformedInitialSeek by remember(videoId) { mutableStateOf(false) }
 
