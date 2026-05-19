@@ -20,6 +20,14 @@ import SwiftUI
 struct WhatsNewContent: Codable, Equatable {
     let version: String
     let title: String
+    /// Optional. When present, controls the value written to
+    /// `lastSeenWhatsNewVersion` on a first-ever launch. Use this to make
+    /// the popup fire even for fresh installs of a specific release — set
+    /// it to the *previous* release's version (e.g. "1.6" while shipping
+    /// 1.7), and the version-comparison below will see a mismatch and
+    /// show the popup once. Omit it for normal "suppress on fresh
+    /// install" behavior.
+    let firstLaunchSeed: String?
     let items: [Item]
 
     struct Item: Codable, Equatable, Identifiable {
@@ -55,12 +63,15 @@ final class WhatsNewService: ObservableObject {
         let defaults = UserDefaults.standard
 
         if !defaults.bool(forKey: Self.firstLaunchKey) {
-            // First launch ever — pre-mark the current version as seen so
-            // the popup doesn't fire on a fresh install. The popup only
-            // appears after an *update* bumps `version`.
+            // First launch ever. Seed `lastSeen` with the JSON's
+            // `firstLaunchSeed` (if specified) or the current version (the
+            // default). When the seed is an *earlier* version, the
+            // comparison below will fire the popup even for fresh
+            // installs — useful for the release that *introduces* the
+            // What's New feature itself (otherwise nobody would ever see
+            // it for that release).
             defaults.set(true, forKey: Self.firstLaunchKey)
-            defaults.set(content.version, forKey: Self.lastSeenVersionKey)
-            return
+            defaults.set(content.firstLaunchSeed ?? content.version, forKey: Self.lastSeenVersionKey)
         }
 
         let lastSeen = defaults.string(forKey: Self.lastSeenVersionKey)

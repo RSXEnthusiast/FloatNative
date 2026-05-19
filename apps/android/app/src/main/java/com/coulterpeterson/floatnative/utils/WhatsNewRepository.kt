@@ -22,6 +22,13 @@ object WhatsNewRepository {
     data class Content(
         val version: String,
         val title: String,
+        /**
+         * Optional. Controls the value written to `lastSeenVersion` on a
+         * first-ever launch. When set to an earlier release than [version],
+         * the popup fires even for fresh installs — useful for the release
+         * that *introduces* the What's New feature itself.
+         */
+        val firstLaunchSeed: String? = null,
         val items: List<Item>,
     )
 
@@ -61,13 +68,14 @@ object WhatsNewRepository {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
         if (!prefs.getBoolean(KEY_FIRST_LAUNCH_SEEDED, false)) {
-            // First launch ever — suppress the popup by marking the bundled
-            // version as already seen. Future updates will fire it.
+            // First launch ever. Seed `lastSeen` with the JSON's
+            // firstLaunchSeed (if specified) or the bundled version. When
+            // the seed is an *earlier* version, the version-comparison
+            // below will fire the popup even on a fresh install.
             prefs.edit()
                 .putBoolean(KEY_FIRST_LAUNCH_SEEDED, true)
-                .putString(KEY_LAST_SEEN_VERSION, content.version)
+                .putString(KEY_LAST_SEEN_VERSION, content.firstLaunchSeed ?: content.version)
                 .apply()
-            return
         }
 
         val lastSeen = prefs.getString(KEY_LAST_SEEN_VERSION, null)
