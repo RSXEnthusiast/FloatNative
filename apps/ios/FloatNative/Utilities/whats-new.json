@@ -6,22 +6,27 @@
     {
       "icon": "heart.fill",
       "title": "Support / Donate",
-      "body": "New Settings entry to support FloatNative's development."
+      "body": "A new Settings entry to support FloatNative's development."
+    },
+    {
+      "icon": "moon.zzz",
+      "title": "Sleep Timer",
+      "body": "Pause playback automatically after a chosen duration. Settings → Playback."
     },
     {
       "icon": "rectangle.landscape.rotate",
       "title": "Force Landscape",
-      "body": "Lock to landscape from the player even when rotation lock is on."
+      "body": "Lock to landscape from the player even when the system rotation lock is on."
     },
     {
       "icon": "speedometer",
       "title": "Playback Speed Sticks",
-      "body": "Your chosen playback speed now carries from one video to the next. Apple TV gets a Speed menu too."
+      "body": "Your chosen playback speed now carries from one video to the next. Apple TV gets its own Speed menu, too."
     },
     {
-      "icon": "tv",
-      "title": "Android TV / Fire TV stays awake",
-      "body": "Screen no longer dims during playback."
+      "icon": "arrow.uturn.backward",
+      "title": "Smoother Fullscreen Return",
+      "body": "Rotating back to portrait — or tapping the close button in fullscreen — no longer pauses playback."
     }
   ]
 }

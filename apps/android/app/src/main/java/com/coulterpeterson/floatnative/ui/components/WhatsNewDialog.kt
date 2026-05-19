@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Android
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
@@ -113,6 +114,7 @@ private fun iconFor(name: String): ImageVector = when (name.lowercase()) {
     "lightbulb", "bolt" -> Icons.Filled.Lightbulb
     "tv" -> Icons.Filled.Tv
     "android" -> Icons.Filled.Android
+    "bedtime", "moon", "sleep" -> Icons.Filled.Bedtime
     "star", "sparkles" -> Icons.Filled.Star
     else -> Icons.Filled.Info
 }

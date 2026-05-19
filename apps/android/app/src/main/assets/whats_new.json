@@ -6,7 +6,12 @@
     {
       "icon": "favorite",
       "title": "Support / Donate",
-      "body": "New Settings entry to support FloatNative's development."
+      "body": "A new Settings entry to support FloatNative's development."
+    },
+    {
+      "icon": "bedtime",
+      "title": "Sleep Timer",
+      "body": "Pause playback automatically after a chosen duration. Settings → Playback."
     },
     {
       "icon": "speed",
@@ -14,13 +19,13 @@
       "body": "Your chosen playback speed now carries from one video to the next."
     },
     {
-      "icon": "lightbulb",
-      "title": "Android TV / Fire TV stays awake",
-      "body": "Screen no longer dims during playback."
+      "icon": "tv",
+      "title": "Android TV / Fire TV Stays Awake",
+      "body": "The screen no longer dims during playback."
     },
     {
       "icon": "android",
-      "title": "Sideloaded APK icon",
+      "title": "Sideloaded APK Icon",
       "body": "Standalone APK builds now show the FloatNative icon instead of the default Android robot."
     }
   ]
