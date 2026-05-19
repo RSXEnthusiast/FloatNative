@@ -167,13 +167,6 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
         controller.player = player
         controller.showsPlaybackControls = showsPlaybackControls
         controller.allowsPictureInPicturePlayback = true
-        #if !os(tvOS)
-        // Auto-enter PiP on home / app-switch from inline so playback keeps
-        // going in a floating window. Does NOT fix the lock-screen case
-        // (the system pre-empts PiP attach on lock) — that limitation is
-        // accepted; see #28 thread.
-        controller.canStartPictureInPictureAutomaticallyFromInline = true
-        #endif
         controller.delegate = context.coordinator
 
         #if os(tvOS)
