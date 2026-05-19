@@ -18,7 +18,9 @@ interface CDNV2Api {
         @Json(name = "vod") vod("vod"),
         @Json(name = "aod") aod("aod"),
         @Json(name = "live") live("live"),
-        @Json(name = "download") download("download")
+        @Json(name = "download") download("download");
+
+        override fun toString(): kotlin.String = value
     }
 
     /**

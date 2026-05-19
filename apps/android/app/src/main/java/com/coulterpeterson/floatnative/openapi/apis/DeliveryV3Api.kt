@@ -17,7 +17,9 @@ interface DeliveryV3Api {
     enum class ScenarioGetDeliveryInfoV3(val value: kotlin.String) {
         @Json(name = "onDemand") onDemand("onDemand"),
         @Json(name = "download") download("download"),
-        @Json(name = "live") live("live")
+        @Json(name = "live") live("live");
+
+        override fun toString(): kotlin.String = value
     }
 
 
@@ -29,7 +31,9 @@ interface DeliveryV3Api {
         @Json(name = "hls.fmp4") hlsPeriodFmp4("hls.fmp4"),
         @Json(name = "dash.mpegts") dashPeriodMpegts("dash.mpegts"),
         @Json(name = "dash.m4s") dashPeriodM4s("dash.m4s"),
-        @Json(name = "flat") flat("flat")
+        @Json(name = "flat") flat("flat");
+
+        override fun toString(): kotlin.String = value
     }
 
     /**

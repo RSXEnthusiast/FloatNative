@@ -77,7 +77,9 @@ interface UserV3Api {
     enum class PlatformGetStatus(val value: kotlin.String) {
         @Json(name = "android") android("android"),
         @Json(name = "ios") ios("ios"),
-        @Json(name = "web") web("web")
+        @Json(name = "web") web("web");
+
+        override fun toString(): kotlin.String = value
     }
 
     /**

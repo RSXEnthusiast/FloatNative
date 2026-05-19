@@ -132,7 +132,9 @@ interface ContentV3Api {
     */
     enum class SortGetCreatorBlogPosts(val value: kotlin.String) {
         @Json(name = "ASC") ASC("ASC"),
-        @Json(name = "DESC") DESC("DESC")
+        @Json(name = "DESC") DESC("DESC");
+
+        override fun toString(): kotlin.String = value
     }
 
     /**

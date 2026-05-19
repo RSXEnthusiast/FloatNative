@@ -136,6 +136,39 @@ import retrofit2.http.QueryMap
     echo "✅ Rewrote fetchAfter param to @QueryMap in ContentV3Api.kt"
 fi
 
+# Post-processing: parameter enums lost their `override fun toString() = value`
+# block in newer openapi-generator versions. Without it Retrofit's @Query
+# serializes the Kotlin enum *name* (e.g. `hlsPeriodFmp4`) instead of the wire
+# value (`hls.fmp4`), and Floatplane responds 400 "outputKind ... not allowed".
+# Multi-video posts surfaced this because the user opened a new post for the
+# first time since the regen. Inject the toString override into every parameter
+# enum that carries a `value` ctor arg.
+python3 - "$TARGET_PACKAGE_DIR/apis" <<'PY'
+import sys, re, pathlib
+apis_dir = pathlib.Path(sys.argv[1])
+pattern = re.compile(
+    r"(enum class \w+\(val value: kotlin\.String\)\s*\{\n)((?:.*\n)*?)(\s*\}\n)",
+    re.MULTILINE,
+)
+def add_toString(m):
+    header, body, close = m.group(1), m.group(2), m.group(3)
+    if "override fun toString" in body:
+        return header + body + close
+    # The last enum entry may end with "," or just whitespace; either way we
+    # need to terminate it with ";" before appending the toString method.
+    stripped = body.rstrip()
+    if stripped.endswith(","):
+        stripped = stripped[:-1]
+    new_body = stripped + ";\n\n        override fun toString(): kotlin.String = value\n"
+    return header + new_body + close
+for kt in apis_dir.glob("*.kt"):
+    src = kt.read_text()
+    new = pattern.sub(add_toString, src)
+    if new != src:
+        kt.write_text(new)
+        print(f"✅ Restored toString() on parameter enums in {kt.name}")
+PY
+
 TOTAL_FILES=$(find "$TARGET_PACKAGE_DIR" -name "*.kt" | wc -l | tr -d ' ')
 
 echo ""
