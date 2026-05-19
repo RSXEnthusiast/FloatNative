@@ -340,7 +340,6 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
             _ playerViewController: AVPlayerViewController,
             willBeginFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator
         ) {
-            print("🎬 [Fullscreen] willBegin")
             MainActor.assumeIsolated {
                 AVPlayerManager.shared.isInFullScreenTransition = true
             }
@@ -358,7 +357,6 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
             _ playerViewController: AVPlayerViewController,
             willEndFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator
         ) {
-            print("🎬 [Fullscreen] willEnd")
             // Capture state synchronously — we're already on the main thread
             // when UIKit fires this delegate, but the compiler needs us to
             // tell it explicitly that AVPlayerManager touches are main-isolated.
@@ -371,7 +369,6 @@ struct CustomVideoPlayer: UIViewControllerRepresentable {
                     }
                     AVPlayerManager.shared.forcePortrait()
                     AVPlayerManager.shared.isInFullScreenTransition = false
-                    print("🎬 [Fullscreen] exit complete")
                 }
             }
         }

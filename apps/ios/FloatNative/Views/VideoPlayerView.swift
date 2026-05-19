@@ -197,9 +197,7 @@ struct VideoPlayerView: View {
             //      In this case we DO tear down so audio doesn't orphan (GH #40).
             let inPip = playerManager.hasPIPSession
             let inFullscreen = playerManager.isInFullScreenTransition
-            print("🎬 [VideoPlayerView] onDisappear inPip=\(inPip) inFullscreen=\(inFullscreen)")
             if !inPip && !inFullscreen {
-                print("🎬 [VideoPlayerView] tearing down player")
                 playerManager.pause()
                 playerManager.reset()
                 playerManager.playerViewController = nil

@@ -419,34 +419,6 @@ class AVPlayerManager: NSObject, ObservableObject {
             }
         }
 
-        // Playback-stall notification — fires when AVPlayer ran out of buffered
-        // data. Worth knowing for the GH #11 tvOS stall: if we never see this,
-        // playback never started buffering, which points at HLS-parsing trouble
-        // (vs. network) and the master/variant playlists are the prime suspects.
-        NotificationCenter.default.addObserver(forName: .AVPlayerItemPlaybackStalled, object: item, queue: .main) { _ in
-            print("⏸ [AVPlayer] Playback stalled")
-        }
-
-        // Track status transitions: .unknown → .readyToPlay / .failed. A .failed
-        // status without a corresponding errorLog entry is rare but means the
-        // item itself rejected the asset (e.g. malformed master playlist).
-        item.publisher(for: \.status)
-            .sink { status in
-                let label: String = switch status {
-                case .unknown: "unknown"
-                case .readyToPlay: "readyToPlay"
-                case .failed: "failed"
-                @unknown default: "@unknown"
-                }
-                print("🎞 [AVPlayer] PlayerItem.status → \(label)")
-                if status == .failed, let err = item.error as NSError? {
-                    print("   error domain=\(err.domain) code=\(err.code) desc=\(err.localizedDescription)")
-                    if let underlying = err.userInfo[NSUnderlyingErrorKey] as? NSError {
-                        print("   underlying domain=\(underlying.domain) code=\(underlying.code) desc=\(underlying.localizedDescription)")
-                    }
-                }
-            }
-            .store(in: &cancellables)
     }
 
     // MARK: - Change Quality
@@ -767,11 +739,7 @@ class AVPlayerManager: NSObject, ObservableObject {
     // MARK: - Fullscreen Control
 
     func enterFullScreen(animated: Bool = true) {
-        guard let playerViewController = playerViewController else {
-            print("🎬 [Fullscreen] enterFullScreen: no playerViewController")
-            return
-        }
-        print("🎬 [Fullscreen] enterFullScreen invoked")
+        guard let playerViewController = playerViewController else { return }
         let selector = NSSelectorFromString("enterFullScreenAnimated:completionHandler:")
         if playerViewController.responds(to: selector) {
             playerViewController.perform(selector, with: animated, with: nil)
@@ -779,11 +747,7 @@ class AVPlayerManager: NSObject, ObservableObject {
     }
 
     func exitFullScreen(animated: Bool = true) {
-        guard let playerViewController = playerViewController else {
-            print("🎬 [Fullscreen] exitFullScreen: no playerViewController")
-            return
-        }
-        print("🎬 [Fullscreen] exitFullScreen invoked")
+        guard let playerViewController = playerViewController else { return }
         let selector = NSSelectorFromString("exitFullScreenAnimated:completionHandler:")
         if playerViewController.responds(to: selector) {
             playerViewController.perform(selector, with: animated, with: nil)
