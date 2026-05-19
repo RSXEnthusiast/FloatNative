@@ -1162,14 +1162,20 @@ struct VideoPlayerView: View {
                     ProgressView()
                         .tint(.white)
                 } else {
-                    HStack(spacing: 4) {
+                    // Stack the resolution label *under* the gear so the
+                    // toolbar can hold both without the label being squeezed
+                    // into one-char-per-line ("1\n0\n8\n0\np") once the new
+                    // CC + rotate buttons share the row.
+                    VStack(spacing: 1) {
                         Image(systemName: "gearshape")
+                            .font(.title2)
                         if let currentQuality = playerManager.currentQuality {
                             Text(currentQuality.label)
-                                .font(.caption)
+                                .font(.system(size: 9, weight: .medium))
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
                         }
                     }
-                    .font(.title2)
                     .foregroundColor(Color.adaptiveText)
                 }
             }

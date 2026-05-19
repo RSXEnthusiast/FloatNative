@@ -17,19 +17,38 @@ struct CaptionsOverlay: View {
     }
 
     var body: some View {
-        VStack {
+        // Bigger text on tvOS (TVs are far from the viewer) and a tighter
+        // bottom inset so the caption sits just above where the transport bar
+        // surfaces. AVPlayerViewController shrinks `contentOverlayView`
+        // upward when its controls show, so a small inset keeps the caption
+        // close to the chrome instead of stranded mid-screen.
+        #if os(tvOS)
+        let fontSize: CGFloat = 32
+        let bottomInset: CGFloat = 8
+        let bgPaddingH: CGFloat = 16
+        let bgPaddingV: CGFloat = 8
+        let edgeInset: CGFloat = 32
+        #else
+        let fontSize: CGFloat = 18
+        let bottomInset: CGFloat = 32
+        let bgPaddingH: CGFloat = 12
+        let bgPaddingV: CGFloat = 6
+        let edgeInset: CGFloat = 24
+        #endif
+
+        return VStack {
             Spacer()
             if !activeText.isEmpty {
                 Text(activeText)
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: fontSize, weight: .medium))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, bgPaddingH)
+                    .padding(.vertical, bgPaddingV)
                     .background(Color.black.opacity(0.6))
                     .cornerRadius(4)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 32)
+                    .padding(.horizontal, edgeInset)
+                    .padding(.bottom, bottomInset)
                     .transition(.opacity)
             }
         }
