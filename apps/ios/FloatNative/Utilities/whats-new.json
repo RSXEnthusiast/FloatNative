@@ -1,32 +1,37 @@
 {
-  "version": "1.7",
-  "title": "What's New in 1.7",
-  "firstLaunchSeed": "1.6",
+  "version": "1.8",
+  "title": "What's New in 1.8",
+  "firstLaunchSeed": "1.7",
   "items": [
     {
-      "icon": "heart.fill",
-      "title": "Support / Donate",
-      "body": "A new Settings entry to support FloatNative's development."
+      "icon": "rectangle.stack",
+      "title": "Multi-Part Posts",
+      "body": "Posts that bundle more than one video now show a parts picker on iPhone and iPad, and a Parts sidebar on Apple TV."
     },
     {
-      "icon": "moon.zzz",
-      "title": "Sleep Timer",
-      "body": "Pause playback automatically after a chosen duration. Settings → Playback."
+      "icon": "captions.bubble",
+      "title": "Closed Captions",
+      "body": "Floatplane's auto-generated captions now play on iPhone, iPad, and Apple TV. Toggle them from the CC button next to the rotate control."
     },
     {
-      "icon": "rectangle.landscape.rotate",
-      "title": "Force Landscape",
-      "body": "Lock to landscape from the player even when the system rotation lock is on."
+      "icon": "arrowshape.turn.up.left",
+      "title": "Reply to Comments",
+      "body": "Tap Reply under any top-level comment to thread your reply right from the player."
     },
     {
-      "icon": "speedometer",
-      "title": "Playback Speed Sticks",
-      "body": "Your chosen playback speed now carries from one video to the next. Apple TV gets its own Speed menu, too."
+      "icon": "clock.badge.checkmark",
+      "title": "Accurate Card Durations",
+      "body": "Multi-part posts show the primary clip's length instead of the sum of every part, with a small +N badge when there are extras."
     },
     {
-      "icon": "arrow.uturn.backward",
-      "title": "Smoother Fullscreen Return",
-      "body": "Rotating back to portrait — or tapping the close button in fullscreen — no longer pauses playback."
+      "icon": "iphone.gen3",
+      "title": "iOS 17 + tvOS 17 Support",
+      "body": "FloatNative now runs on iOS 17 and tvOS 17 devices in addition to 18+."
+    },
+    {
+      "icon": "hand.thumbsup",
+      "title": "Playback Polish",
+      "body": "iPad audio now stops when you back out of a video, landscape rotation no longer flashes black, and the resolution label sits cleanly under the gear."
     }
   ]
 }

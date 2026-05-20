@@ -1,37 +1,37 @@
 {
-  "version": "1.7",
-  "title": "What's New in 1.7",
-  "firstLaunchSeed": "1.6",
+  "version": "1.8",
+  "title": "What's New in 1.8",
+  "firstLaunchSeed": "1.7",
   "items": [
     {
-      "icon": "favorite",
-      "title": "Support / Donate",
-      "body": "A new Settings entry to support FloatNative's development."
+      "icon": "view_carousel",
+      "title": "Multi-Part Posts",
+      "body": "Posts with more than one video now show a parts picker on phone and a Parts button on Android TV. Each clip remembers its own progress."
     },
     {
-      "icon": "bedtime",
-      "title": "Sleep Timer",
-      "body": "Pause playback automatically after a chosen duration. Settings → Playback."
+      "icon": "closed_caption",
+      "title": "Closed Captions",
+      "body": "Floatplane's captions now show on phone and Android TV. Toggle them from the CC button in the player chrome."
     },
     {
-      "icon": "screen_rotation",
-      "title": "Force Landscape",
-      "body": "Lock to landscape from the player with a single tap, even when system auto-rotate is off."
+      "icon": "schedule",
+      "title": "Accurate Card Durations",
+      "body": "Multi-part posts show the primary clip's length instead of the sum of every part, with a +N badge when there are extras."
     },
     {
-      "icon": "speed",
-      "title": "Playback Speed Sticks",
-      "body": "Your chosen playback speed now carries from one video to the next."
+      "icon": "history",
+      "title": "Resume from History on TV",
+      "body": "Tapping a video from History on Android TV now picks up where you left off."
     },
     {
-      "icon": "tv",
-      "title": "Android TV / Fire TV Stays Awake",
-      "body": "The screen no longer dims during playback."
+      "icon": "picture_in_picture",
+      "title": "Picture-in-Picture Fix",
+      "body": "The PiP window no longer leaves the video stranded in the top-left corner during the transition."
     },
     {
-      "icon": "android",
-      "title": "Sideloaded APK Icon",
-      "body": "Standalone APK builds now show the FloatNative icon instead of the default Android robot."
+      "icon": "auto_fix_high",
+      "title": "Reliability Polish",
+      "body": "Watch progress saves no longer drop when you back out of the player, and the home feed paginates correctly again after a recent API change."
     }
   ]
 }
