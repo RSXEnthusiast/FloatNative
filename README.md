@@ -1,20 +1,21 @@
 # FloatNative
 
-<p align="center">
-  <a href="https://apps.apple.com/ca/app/floatnative/id6754177516">
-    <img alt="Download on the App Store"
-         src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83"
-         height="40"
-         style="vertical-align: middle;">
-  </a>
-  &nbsp;
-  <a href="https://play.google.com/store/apps/details?id=com.coulterpeterson.floatnative">
-    <img alt="Get it on Google Play"
-         src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
-         height="60"
-         style="vertical-align: middle;">
-  </a>
-</p>
+<table align="center"><tr>
+  <td>
+    <a href="https://apps.apple.com/ca/app/floatnative/id6754177516">
+      <img alt="Download on the App Store"
+           src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83"
+           height="40">
+    </a>
+  </td>
+  <td>
+    <a href="https://play.google.com/store/apps/details?id=com.coulterpeterson.floatnative">
+      <img alt="Get it on Google Play"
+           src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+           height="60">
+    </a>
+  </td>
+</tr></table>
 
 A modern, native client for [Floatplane](https://www.floatplane.com) — built from scratch for iPhone, iPad, Apple TV, Android phone, Android TV, and Fire TV.
 
