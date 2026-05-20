@@ -15,6 +15,13 @@
            height="60">
     </a>
   </td>
+  <td>
+    <a href="https://coulterpeterson.com/floatnative/">
+      <img alt="APK Download"
+           src="https://img.shields.io/badge/APK_Download-181717?style=for-the-badge&logo=android&logoColor=white"
+           height="40">
+    </a>
+  </td>
 </tr></table>
 
 A modern, native client for [Floatplane](https://www.floatplane.com) — built from scratch for iPhone, iPad, Apple TV, Android phone, Android TV, and Fire TV.
