@@ -45,7 +45,7 @@ floatnative/
 ├── apps/
 │   ├── ios/               # SwiftUI app — iOS, iPadOS, tvOS
 │   ├── android/           # Jetpack Compose app — Android phone, Android TV, Fire TV
-│   └── chrome-extension/  # Companion extension for Floatplane playlists in the web UI
+│   └── browser-extension/ # Companion extension for Floatplane playlists in the web UI (Chrome, Firefox)
 │
 ├── packages/
 │   ├── api/               # Companion API — original Cloudflare Workers (TS, Hono, D1)

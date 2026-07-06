@@ -1,4 +1,4 @@
 packages:
   - 'packages/*'
   - 'apps/api'
-  - 'apps/chrome-extension'
+  - 'apps/browser-extension'

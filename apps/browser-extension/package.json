@@ -1,7 +1,7 @@
 {
-  "name": "floatnative-chrome-extension",
+  "name": "floatnative-browser-extension",
   "version": "1.0.0",
-  "description": "Floatplane Chrome Extension for Playlists",
+  "description": "Floatplane browser extension for Playlists (Chrome and Firefox)",
   "scripts": {
     "build": "webpack --config webpack.config.js --mode production",
     "build:dev": "webpack --config webpack.config.js --mode development",

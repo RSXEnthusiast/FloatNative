@@ -13,10 +13,10 @@
     "api:db:generate": "pnpm --filter api run db:generate",
     "api:db:migrate:local": "pnpm --filter api run db:migrate:local",
     "api:db:migrate:remote": "pnpm --filter api run db:migrate:remote",
-    "extension:build": "pnpm --filter floatnative-chrome-extension run build",
-    "extension:build:dev": "pnpm --filter floatnative-chrome-extension run build:dev",
-    "extension:watch": "pnpm --filter floatnative-chrome-extension run watch",
-    "extension:firefox:run": "pnpm --filter floatnative-chrome-extension run firefox:run",
-    "extension:firefox:lint": "pnpm --filter floatnative-chrome-extension run firefox:lint"
+    "extension:build": "pnpm --filter floatnative-browser-extension run build",
+    "extension:build:dev": "pnpm --filter floatnative-browser-extension run build:dev",
+    "extension:watch": "pnpm --filter floatnative-browser-extension run watch",
+    "extension:firefox:run": "pnpm --filter floatnative-browser-extension run firefox:run",
+    "extension:firefox:lint": "pnpm --filter floatnative-browser-extension run firefox:lint"
   }
 }

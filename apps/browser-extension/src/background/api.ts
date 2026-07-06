@@ -34,7 +34,7 @@ export class CompanionAPI {
     const url = `${COMPANION_BASE_URL}${endpoint}`;
     const headers: HeadersInit = {
       "Content-Type": "application/json",
-      "User-Agent": "FloatNative/1.0 (ChromeExtension)"
+      "User-Agent": "FloatNative/1.0 (BrowserExtension)"
     };
 
     if (requiresAuth) {
