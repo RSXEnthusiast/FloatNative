@@ -1,3 +1,4 @@
+import browser from "webextension-polyfill";
 
 // Helper for Base64 Url Encoding
 function base64UrlEncode(array: Uint8Array | ArrayBuffer): string {
@@ -36,7 +37,7 @@ export class DPoPManager {
     if (this.keyPair) return this.keyPair;
 
     // Try to load from storage
-    const stored = await chrome.storage.local.get([DPoPManager.STORAGE_KEY]);
+    const stored = await browser.storage.local.get([DPoPManager.STORAGE_KEY]);
     if (stored[DPoPManager.STORAGE_KEY]) {
       try {
         const jwkPair = stored[DPoPManager.STORAGE_KEY] as { privateKey: JsonWebKey, publicKey: JsonWebKey };
@@ -78,7 +79,7 @@ export class DPoPManager {
     // Note: privateKey is sensitive. Chrome storage local is reasonably secure for extensions but not perfect.
     // Ideally we'd use non-extractable keys if persistent storage for CryptoKey objects was supported,
     // but IndexDB handles that complexly. For now, saving JWK is standard for extensions without dedicated secure storage.
-    await chrome.storage.local.set({
+    await browser.storage.local.set({
       [DPoPManager.STORAGE_KEY]: {
         privateKey: privateJwk,
         publicKey: publicJwk

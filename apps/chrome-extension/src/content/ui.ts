@@ -1,3 +1,5 @@
+import browser from "webextension-polyfill";
+
 export function createPlaylistButton(): HTMLElement {
   // Structure: <div class="_contentButton_..."><i class="material-icons">playlist_add</i></div>
   // We need to mimic the class names. Since they are hashed, we should try to find an existing button and copy its classes
@@ -894,7 +896,7 @@ async function showPlaylistOverlay() {
 
 async function safeSendMessage(message: any): Promise<any> {
   try {
-    return await chrome.runtime.sendMessage(message);
+    return await browser.runtime.sendMessage(message);
   } catch (e: any) {
     if (e.message && e.message.includes("Extension context invalidated")) {
       throw new Error("There was an error, please refresh and try again");

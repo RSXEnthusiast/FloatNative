@@ -1,14 +1,15 @@
+import browser from "webextension-polyfill";
 import { AuthService } from "./auth";
 import { CompanionAPI } from "./api";
 import { FloatplaneAPI } from "./floatplane";
 
 console.log("Floatplane Extension Background Worker Loaded");
 
-chrome.runtime.onInstalled.addListener(() => {
+browser.runtime.onInstalled.addListener(() => {
   console.log("Extension installed");
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
   console.log("Background received message:", message);
 
   if (message.type === "CHECK_AUTH_STATUS") {
@@ -75,4 +76,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(err => sendResponse({ success: false, error: err.toString() }));
     return true;
   }
+
+  return true;
 });

@@ -1,3 +1,4 @@
+import browser from "webextension-polyfill";
 import { AuthService } from "./auth";
 import { DPoPManager } from "./dpop";
 
@@ -10,7 +11,7 @@ export class CompanionAPI {
 
   private constructor() {
     // Load API key from storage
-    chrome.storage.local.get([KEY_COMPANION_API_KEY], (result) => {
+    browser.storage.local.get([KEY_COMPANION_API_KEY]).then((result) => {
       if (result && result[KEY_COMPANION_API_KEY]) {
         this.apiKey = result[KEY_COMPANION_API_KEY] as string;
       }
@@ -26,7 +27,7 @@ export class CompanionAPI {
 
   private async setApiKey(key: string) {
     this.apiKey = key;
-    await chrome.storage.local.set({ [KEY_COMPANION_API_KEY]: key });
+    await browser.storage.local.set({ [KEY_COMPANION_API_KEY]: key });
   }
 
   private async request(endpoint: string, method: string = "GET", body: any = null, requiresAuth: boolean = true): Promise<any> {

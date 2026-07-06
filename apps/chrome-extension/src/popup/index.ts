@@ -1,3 +1,5 @@
+import browser from "webextension-polyfill";
+
 console.log("Popup script loaded");
 
 const elements = {
@@ -12,7 +14,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Check if already logged in
   try {
-    const response = await chrome.runtime.sendMessage({ type: "CHECK_AUTH_STATUS" });
+    const response: any = await browser.runtime.sendMessage({ type: "CHECK_AUTH_STATUS" });
     if (response && response.isAuthenticated) {
       showSuccess();
     }
@@ -26,7 +28,7 @@ async function startAuth() {
   elements.loginBtn.setAttribute("disabled", "true");
 
   try {
-    const response = await chrome.runtime.sendMessage({ type: "START_AUTH_FLOW" });
+    const response: any = await browser.runtime.sendMessage({ type: "START_AUTH_FLOW" });
 
     if (!response || !response.success) {
       elements.status.textContent = "Error: " + (response?.error || "Unknown error");

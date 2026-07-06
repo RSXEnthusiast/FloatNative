@@ -1,3 +1,4 @@
+import browser from "webextension-polyfill";
 import { DPoPManager } from "./dpop";
 
 // Helper for random strings
@@ -65,13 +66,10 @@ export class AuthService {
   async startAuthFlow(): Promise<boolean> {
     try {
       // 1. Get Redirect URI dynamically
-      const redirectUri = chrome.identity.getRedirectURL();
-      console.log("Expected Redirect URI:", "https://cnjjpkfgigpedhakhcaoanjdjcccajci.chromiumapp.org/");
-      console.log("Actual Redirect URI:  ", redirectUri);
-
-      if (!redirectUri.includes("cnjjpkfgigpedhakhcaoanjdjcccajci")) {
-        console.warn("WARNING: Extension ID mismatch. Auth will likely fail at the provider level or browser level.");
-      }
+      // This differs per browser (e.g. *.chromiumapp.org on Chrome, *.extensions.allizom.org
+      // on Firefox) and must be registered with the OAuth provider ahead of time.
+      const redirectUri = browser.identity.getRedirectURL();
+      console.log("Redirect URI for this browser:", redirectUri);
 
       // 2. Generate PKCE
       const verifier = this.generateCodeVerifier();
@@ -89,13 +87,13 @@ export class AuthService {
       console.log("Launching Web Auth Flow:", authUrl.toString());
 
       // 4. Launch Web Auth Flow
-      const responseUrl = await chrome.identity.launchWebAuthFlow({
+      const responseUrl = await browser.identity.launchWebAuthFlow({
         url: authUrl.toString(),
         interactive: true
       });
 
-      if (chrome.runtime.lastError || !responseUrl) {
-        throw new Error(chrome.runtime.lastError?.message || "Auth failed (no redirect URL)");
+      if (!responseUrl) {
+        throw new Error("Auth failed (no redirect URL)");
       }
 
       // 5. Extract Code
@@ -149,7 +147,7 @@ export class AuthService {
   // --- Token Management ---
 
   async getAccessToken(): Promise<string | null> {
-    const data = await chrome.storage.local.get([KEY_ACCESS_TOKEN, KEY_EXPIRES_AT, KEY_REFRESH_TOKEN]);
+    const data = await browser.storage.local.get([KEY_ACCESS_TOKEN, KEY_EXPIRES_AT, KEY_REFRESH_TOKEN]);
     const accessToken = data[KEY_ACCESS_TOKEN] as string | undefined;
     const expiresAt = data[KEY_EXPIRES_AT] as number | undefined;
     const refreshToken = data[KEY_REFRESH_TOKEN] as string | undefined;
@@ -161,7 +159,7 @@ export class AuthService {
       if (refreshToken) {
         try {
           await this.refreshAccessToken(refreshToken);
-          const newData = await chrome.storage.local.get([KEY_ACCESS_TOKEN]);
+          const newData = await browser.storage.local.get([KEY_ACCESS_TOKEN]);
           return newData[KEY_ACCESS_TOKEN] as string;
         } catch (e) {
           console.error("Refresh failed", e);
@@ -209,7 +207,7 @@ export class AuthService {
     const refreshToken = data.refresh_token; // may be undefined?
     const expiresAt = Date.now() + (expiresIn * 1000);
 
-    await chrome.storage.local.set({
+    await browser.storage.local.set({
       [KEY_ACCESS_TOKEN]: accessToken,
       [KEY_EXPIRES_AT]: expiresAt,
       [KEY_REFRESH_TOKEN]: refreshToken
@@ -217,8 +215,8 @@ export class AuthService {
   }
 
   async logout(): Promise<void> {
-    await chrome.storage.local.remove([KEY_ACCESS_TOKEN, KEY_EXPIRES_AT, KEY_REFRESH_TOKEN]);
+    await browser.storage.local.remove([KEY_ACCESS_TOKEN, KEY_EXPIRES_AT, KEY_REFRESH_TOKEN]);
     // Also clear companion api key? Yes probably.
-    // await chrome.storage.local.remove(["fp_companion_key"]); // This is managed by CompanionAPI class but we can clear it.
+    // await browser.storage.local.remove(["fp_companion_key"]); // This is managed by CompanionAPI class but we can clear it.
   }
 }
