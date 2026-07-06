@@ -16,6 +16,9 @@
     "extension:build": "pnpm --filter floatnative-browser-extension run build",
     "extension:build:dev": "pnpm --filter floatnative-browser-extension run build:dev",
     "extension:watch": "pnpm --filter floatnative-browser-extension run watch",
+    "extension:build:firefox": "pnpm --filter floatnative-browser-extension run build:firefox",
+    "extension:build:firefox:dev": "pnpm --filter floatnative-browser-extension run build:firefox:dev",
+    "extension:watch:firefox": "pnpm --filter floatnative-browser-extension run watch:firefox",
     "extension:firefox:run": "pnpm --filter floatnative-browser-extension run firefox:run",
     "extension:firefox:lint": "pnpm --filter floatnative-browser-extension run firefox:lint"
   }

@@ -2,6 +2,15 @@
   "manifest_version": 3,
   "name": "FloatNative",
   "version": "1.1",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "floatnative@coulterpeterson.com",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": ["authenticationInfo"]
+      }
+    }
+  },
   "permissions": [
     "storage",
     "identity"
@@ -11,7 +20,9 @@
     "https://api.floatnative.coulterpeterson.com/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "scripts": [
+      "background.js"
+    ]
   },
   "content_scripts": [
     {

@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "description": "Floatplane browser extension for Playlists (Chrome and Firefox)",
   "scripts": {
-    "build": "webpack --config webpack.config.js --mode production",
-    "build:dev": "webpack --config webpack.config.js --mode development",
-    "watch": "webpack --config webpack.config.js --watch --mode development",
+    "build": "webpack --config webpack.config.js --mode production --env browser=chrome",
+    "build:dev": "webpack --config webpack.config.js --mode development --env browser=chrome",
+    "watch": "webpack --config webpack.config.js --watch --mode development --env browser=chrome",
+    "build:firefox": "webpack --config webpack.config.js --mode production --env browser=firefox",
+    "build:firefox:dev": "webpack --config webpack.config.js --mode development --env browser=firefox",
+    "watch:firefox": "webpack --config webpack.config.js --watch --mode development --env browser=firefox",
     "firefox:run": "web-ext run --source-dir dist --target firefox-desktop",
     "firefox:lint": "web-ext lint --source-dir dist"
   },

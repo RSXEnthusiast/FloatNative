@@ -1,3 +1,4 @@
 dist
 node_modules
 public/manifest.dev.json
+public/manifest.firefox.dev.json
